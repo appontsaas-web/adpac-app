@@ -986,3 +986,45 @@ model CreativeTestVariant {
 
   @@unique([testId, adId])
 }
+
+// A submission from the marketing site's "Get Started" intake wizard
+// (adpac-website's #q_* fields) — saved here purely as a record; the actual
+// notification (to hello@adpac.to) and confirmation (to the lead) emails
+// are sent synchronously by POST /api/public/lead via lib/mailer.ts at
+// submit time, not read from this table. notifiedAt/confirmedAt record
+// whether each of those two sends actually succeeded, since a lead should
+// still be saved even if Zoho SMTP has a hiccup.
+model Lead {
+  id                String   @id @default(cuid())
+  businessName      String
+  website           String?
+  industry          String?
+  monthlyBudget     String?  // free text from the wizard's chip selection, e.g. "$5k–$20k"
+  currentPlatforms  String?  // comma-joined chip selections
+  primaryGoal       String?
+  targetAudience    String?
+  challenges        String?  // comma-joined chip selections
+  notes             String?
+  contactName       String
+  contactEmail      String
+  phone             String?
+  role              String?
+  createdAt         DateTime @default(now())
+  notifiedAt        DateTime? // internal notification email to hello@adpac.to succeeded
+  confirmedAt       DateTime? // confirmation email to the lead succeeded
+}
+
+// A submission from the marketing site's "Schedule a Call" scheduler —
+// same record-plus-email-on-submit pattern as Lead above.
+model CallRequest {
+  id             String   @id @default(cuid())
+  requestedDate  String   // free text label from the date picker, e.g. "Tue, Oct 14"
+  requestedTime  String   // e.g. "2:00 PM"
+  name           String
+  email          String
+  company        String?
+  topic          String?
+  createdAt      DateTime @default(now())
+  notifiedAt     DateTime?
+  confirmedAt    DateTime?
+}
