@@ -1,0 +1,11 @@
+-- This project has never used `prisma migrate dev`/`migrate deploy` — schema
+-- changes are applied directly with `prisma db push` (see prisma/schema.prisma
+-- header and package.json's db:push script). This migrations/ folder from the
+-- old SQLite setup is kept only for history; it is not run automatically.
+--
+-- To stand up the production Postgres database on DigitalOcean for the first
+-- time: set DATABASE_URL locally to the DigitalOcean Postgres connection
+-- string (from the database's "Connection Details" panel), then run:
+--   npx prisma db push
+-- from the adpac-app folder. This creates every table directly from
+-- prisma/schema.prisma — no migration files required.

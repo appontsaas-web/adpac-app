@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3010",
-    "build": "next build",
-    "start": "next start -p 3010",
+    "build": "prisma generate && next build",
+    "start": "next start -p ${PORT:-3010}",
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",

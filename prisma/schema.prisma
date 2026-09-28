@@ -1,9 +1,10 @@
 // AdPac — Google Ads AI Management, Phase 1 data model
 //
-// Uses SQLite for local development (zero setup). For production, switch
-// the datasource below to Postgres (e.g. Supabase/Neon/RDS) — just change
-// `provider` to "postgresql" and point DATABASE_URL at your instance.
-// The schema itself is fully Postgres-compatible as written.
+// Datasource: Postgres (DigitalOcean Managed Database in production).
+// Local development should point DATABASE_URL at a local/dev Postgres
+// instance too now (the app was originally built against SQLite; this
+// schema switched over so it can run on DigitalOcean App Platform,
+// whose containers don't persist a SQLite file across deploys).
 //
 // Note: SQLite does not support native enums. All enum-like fields use String
 // and are enforced at the application layer. Valid values are:
