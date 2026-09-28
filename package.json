@@ -1,0 +1,46 @@
+{
+  "name": "adpac-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3010",
+    "build": "next build",
+    "start": "next start -p 3010",
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "db:seed": "node prisma/seed.cjs"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.cjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "@prisma/client": "^5.20.0",
+    "@types/pdfkit": "^0.17.6",
+    "bcryptjs": "^2.4.3",
+    "googleapis": "^144.0.0",
+    "next": "14.2.15",
+    "next-auth": "^4.24.8",
+    "pdfkit": "^0.19.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.12.7",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.16.10",
+    "@types/react": "^18.3.10",
+    "@types/react-dom": "^18.3.0",
+    "prisma": "^5.20.0",
+    "typescript": "^5.6.2"
+  },
+  "allowScripts": {
+    "fsevents": true,
+    "@prisma/client": true,
+    "@prisma/engines": true,
+    "prisma": true
+  }
+}

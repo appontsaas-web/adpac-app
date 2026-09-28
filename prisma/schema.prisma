@@ -1,0 +1,924 @@
+// AdPac — Google Ads AI Management, Phase 1 data model
+//
+// Uses SQLite for local development (zero setup). For production, switch
+// the datasource below to Postgres (e.g. Supabase/Neon/RDS) — just change
+// `provider` to "postgresql" and point DATABASE_URL at your instance.
+// The schema itself is fully Postgres-compatible as written.
+//
+// Note: SQLite does not support native enums. All enum-like fields use String
+// and are enforced at the application layer. Valid values are:
+//   role:         ADMIN | STAFF
+//   type:         SEARCH | PERFORMANCE_MAX | DISPLAY
+//   status (Campaign):  DRAFT | PENDING_APPROVAL | APPROVED | LIVE | PAUSED | REJECTED
+//   actionType:   CREATE_CAMPAIGN | ADJUST_BUDGET | PAUSE_CAMPAIGN | PAUSE_KEYWORD | PAUSE_AD |
+//                 APPLY_GOOGLE_RECOMMENDATION | DEPLOY_GTM_TAG | REWRITE_AD_COPY | ANOMALY_ALERT
+//                 (ADJUST_BUDGET/PAUSE_CAMPAIGN/REWRITE_AD_COPY/ANOMALY_ALERT are proposedBy "ai" —
+//                 see lib/aiInsights.ts — everything else is proposedBy a User id or "ai" for CREATE_CAMPAIGN)
+//                 LOCATION_ANOMALY_ALERT | DRAFT_REVIEW_REPLY — Google Business Profile AI insights,
+//                 always proposedBy "ai", see lib/businessInsights.ts (locationId/businessReviewId set instead of campaignId)
+//                 META_ADJUST_BUDGET | META_PAUSE_CAMPAIGN | META_ANOMALY_ALERT — Meta (Facebook/Instagram)
+//                 AI insights, always proposedBy "ai", see lib/metaInsights.ts (metaCampaignId set instead of campaignId)
+//                 (Snapchat AI insights not yet built — snapCampaignId on ActionLog is reserved for that)
+//   status (ActionLog): PENDING_APPROVAL | APPROVED | REJECTED | EXECUTED | FAILED
+//   status (Invoice):   UNPAID | PAID
+//   source (Invoice):   MANUAL | RECHARGE_REQUEST
+//   type (TokenTransaction): TOPUP | REVERSAL | ADJUSTMENT | SPEND | FREE_GRANT
+//   permission (ClientAssignment): VIEW | EDIT
+// When switching to Postgres, convert these back to proper `enum` types.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// AdPac staff / agency user (the person operating this app)
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         String   @default("STAFF") // ADMIN | STAFF — ADMIN has access to everything; STAFF only sees clients explicitly assigned to them
+  positionId   String?  // STAFF only — which capability bundle they hold. Unset = no edit capabilities anywhere, even with EDIT client access.
+  position     Position? @relation(fields: [positionId], references: [id])
+  createdAt    DateTime @default(now())
+
+  clients     Client[]
+  assignments ClientAssignment[]
+  monthlyGoalsSet ClientMonthlyGoal[] // goals THIS user set (any past or current author), not goals for clients they own
+}
+
+// A named capability bundle ("Campaign Manager", "Reporting Viewer", etc.)
+// you define once and assign to STAFF users. This is independent of which
+// clients a user can see (that's ClientAssignment) — a position controls
+// WHAT they can do once they have EDIT access to a client. With only VIEW
+// client access, none of these matter — everything stays read-only either
+// way. ADMIN bypasses positions entirely (implicit access to everything).
+// Finance is never covered by any position — always admin-only.
+model Position {
+  id                 String   @id @default(cuid())
+  name               String   @unique // e.g. "Campaign Manager", "Reporting Viewer"
+  canManageCampaigns Boolean  @default(false) // create AI drafts, approve & push live, discard drafts
+  canManageGoogleAds Boolean  @default(false) // connect/disconnect a client's Google Ads account
+  canManageTargeting Boolean  @default(false) // edit ad language/target locations, view & apply Google's AI recommendations
+  canViewInvoices    Boolean  @default(false) // view, download PDF, and click "Pay online" on invoices — never create/edit/delete/mark paid, that's always admin-only
+  canViewReporting   Boolean  @default(false) // view the performance/reporting dashboard (metrics, charts, audience breakdowns) and trigger a manual sync. Read-only, works with VIEW client access (like canViewInvoices) — not gated behind EDIT. Never implied by any other capability, and no longer implied by mere client access either. Also covers connecting/viewing a client's GA4 property, since that's equally read-only.
+  canManageTagManager Boolean @default(false) // connect a client's GTM container and request/approve tag deployments (Google Ads conversion tag, GA4 config tag, remarketing tag). This WRITES to a client's live site tracking, so it's its own capability, separate from reporting — requires EDIT client access like campaigns/googleAds/targeting.
+  canManageBusinessProfile Boolean @default(false) // connect a client's Google Business Profile, and approve AI-drafted review replies (which WRITE to the client's live, public review responses). Requires EDIT client access like campaigns/googleAds/targeting/tagManager.
+  canManageMeta      Boolean  @default(false) // connect a client's Meta (Facebook + Instagram share one ad account) ad account, and approve AI-proposed budget/pause changes to Meta campaigns. Requires EDIT client access like campaigns/googleAds/targeting/tagManager/businessProfile.
+  canManageSnapchat  Boolean  @default(false) // connect a client's Snapchat ad account and manage its campaigns. Requires EDIT client access like campaigns/googleAds/targeting/tagManager/businessProfile/meta.
+  createdAt          DateTime @default(now())
+
+  users User[]
+  hiddenMetrics HiddenMetric[]
+}
+
+// One of AdPac's customers (an advertiser business)
+model Client {
+  id             String   @id @default(cuid())
+  name           String
+  website        String?
+  industry       String?
+  monthlyBudget  Int?     // in cents, USD
+  primaryGoal    String?  // e.g. "Generate leads"
+  adLanguage     String?  // e.g. "English", "Arabic" — language for generated ad copy. Defaults to English if unset.
+  targetLocations String? // free text, e.g. "Lebanon, UAE, Saudi Arabia" — where ads should target.
+  ownerUserId    String
+  owner          User     @relation(fields: [ownerUserId], references: [id])
+  createdAt      DateTime @default(now())
+  validUntil     DateTime? // account "subscription" validity — every new client gets a free quarter
+                            // (createdAt + 3 months) plus a 5000-token FREE_GRANT at creation (see
+                            // lib/validity.ts). Renewed +3 months from whichever is later (current
+                            // validUntil if still active, else the payment date) whenever an invoice
+                            // whose description contains "Starter Bundle - 3 Months" is marked PAID —
+                            // that invoice type extends validity only, it does NOT also top up tokens.
+                            // Purely informational for now — nothing in the app gates access on this.
+  spendGuardrailEnabled Boolean @default(true)
+                            // Hard safety net (see lib/spendGuardrail.ts): when true and monthlyBudget is
+                            // set, every scheduler cycle projects this client's month-end spend from
+                            // month-to-date DailyMetric rows and auto-pauses every LIVE campaign if the
+                            // projection exceeds monthlyBudget by more than 15% — logged as an auditable
+                            // ActionLog (actionType SPEND_GUARDRAIL_PAUSE) rather than done silently.
+                            // Triggers at most once per calendar month so a human resuming campaigns
+                            // afterward isn't immediately fought by the next cycle. Admin-only toggle.
+
+  googleAdsAccounts GoogleAdsAccount[]
+  analyticsProperties GoogleAnalyticsProperty[]
+  tagManagerContainers GoogleTagManagerContainer[]
+  businessProfileAccounts GoogleBusinessProfileAccount[]
+  metaAdAccounts    MetaAdAccount[]
+  snapAdAccounts    SnapAdAccount[]
+  campaigns         Campaign[]
+  actionLogs        ActionLog[]
+  invoices          Invoice[]
+  assignments       ClientAssignment[]
+  aiImpactOverrides AiImpactOverride[]
+  tokenTransactions TokenTransaction[]
+  monthlyGoals      ClientMonthlyGoal[]
+}
+
+// A staff-stated goal for THIS client for one calendar month — separate from
+// Client.primaryGoal (a standing, rarely-changed "what this client is
+// generally for", e.g. "Generate leads"). This is deliberately re-settable
+// every month: priorities shift ("push volume in Q4", "hold CPA flat while
+// we're between fulfillment issues") in ways a single standing field can't
+// capture. One row per client per month (@@unique below) — setting a new
+// goal for the current month overwrites the previous one rather than
+// stacking, since only the CURRENT goal should steer optimization.
+//
+// metricType/targetValue are the structured half (so pacing against it can
+// be computed directly, e.g. "$4,200 of $6,000 spend target, 24 days into
+// the month"); note is free text for nuance a single metric can't hold. At
+// least one of the two should be set, but neither is required at the DB
+// level — a note-only or number-only goal are both legitimate.
+//
+// Read by lib/aiInsights.ts / lib/metaInsights.ts / lib/businessInsights.ts
+// when generating recommendations, so AI-proposed changes optimize toward
+// whatever the human said this month's goal is, not just generic
+// pacing/anomaly signals.
+model ClientMonthlyGoal {
+  id           String   @id @default(cuid())
+  clientId     String
+  client       Client   @relation(fields: [clientId], references: [id])
+  monthKey     String   // "2026-09" (UTC) — one goal per client per month, see @@unique
+  metricType   String?  // "SPEND" | "CONVERSIONS" | "CPA" | "ROAS" | "LEADS" | null (note-only goal)
+  targetValue  Float?   // interpreted per metricType: dollars for SPEND/CPA, a count for CONVERSIONS/LEADS, a ratio for ROAS
+  note         String?  // free text, e.g. "Focus on lead volume, don't worry about CPA this month"
+  setByUserId  String
+  setByUser    User     @relation(fields: [setByUserId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([clientId, monthKey])
+}
+
+// Which metrics are hidden from a given position's dashboards, per
+// platform. Deliberately "presence = hidden" rather than a `visible`
+// boolean column — matches the hiddenFromList pattern used for campaigns
+// elsewhere: nothing to seed for a new position/platform/metric
+// combination, a metric with no row is visible by default, and toggling a
+// checkbox is a single create-or-delete rather than an upsert. ADMIN role
+// always sees every metric regardless of these rows — this only restricts
+// STAFF, matching how canManageX capabilities on Position work.
+model HiddenMetric {
+  id         String   @id @default(cuid())
+  positionId String
+  position   Position @relation(fields: [positionId], references: [id])
+  platform   String   // "google" | "meta" | "snapchat" — matches lib/metricCatalog.ts's keys
+  metricKey  String   // matches lib/metricCatalog.ts's per-platform metric keys
+  createdAt  DateTime @default(now())
+
+  @@unique([positionId, platform, metricKey])
+}
+
+// Grants a STAFF user access to a specific client. ADMIN users bypass this
+// entirely (implicit full access to every client) — this table only matters
+// for non-admins. VIEW = read-only. EDIT = can manage targeting, campaigns,
+// Google Ads connection, and recommendations for this client (subject to
+// their Position's toggles). Finance is separate from VIEW/EDIT entirely:
+// invoices are only visible if the user's Position has canViewInvoices set,
+// and creating/editing/deleting/marking paid is always admin-only regardless.
+model ClientAssignment {
+  id         String   @id @default(cuid())
+  clientId   String
+  client     Client   @relation(fields: [clientId], references: [id])
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  permission String   @default("VIEW") // VIEW | EDIT
+  createdAt  DateTime @default(now())
+
+  @@unique([clientId, userId])
+}
+
+// A connected Google Ads account (OAuth) for a client
+model GoogleAdsAccount {
+  id                     String   @id @default(cuid())
+  clientId               String
+  client                 Client   @relation(fields: [clientId], references: [id])
+  googleCustomerId       String   // Google Ads "Customer ID", e.g. 123-456-7890
+  refreshTokenEncrypted  String   // encrypted with lib/crypto.ts before storage — never store plaintext
+  connectedAt            DateTime @default(now())
+  status                 String   @default("connected") // connected | revoked | error
+  // The account's real billing currency (e.g. "SAR", "USD"), fetched from
+  // Google Ads (customer.currency_code) at connect time and refreshed on
+  // every metrics sync — see fetchAccountCurrency in lib/googleAds.ts. All
+  // cost/conversion-value figures Google Ads returns are in THIS currency,
+  // not USD, so fetchCampaignMetrics/fetchAudienceMetrics convert them to
+  // USD cents (via a fixed FX rate table) before they're stored in
+  // DailyMetric/AudienceMetric — which is what AdPac's tokens and invoices
+  // are priced in. Null until the first successful currency lookup (older
+  // rows before this field existed default to being treated as USD, i.e.
+  // no conversion, until a sync fills this in for real).
+  currencyCode           String?
+
+  campaigns Campaign[]
+}
+
+// A connected GA4 property for a client. Unlike Google Ads, GA4 has no
+// Manager-account hierarchy AdPac can create sub-properties under — the
+// client has to add AdPac's own Google login as a Viewer/Analyst on their
+// GA4 property first (Admin > Property Access Management), same trust model
+// as being invited as a user. Once that's done, connecting here is the same
+// shape as Google Ads: operator enters the property ID they were given, then
+// authorizes with AdPac's own login (which now has access to it). Read-only
+// scope (analytics.readonly) — this can never write to a client's property.
+model GoogleAnalyticsProperty {
+  id                     String   @id @default(cuid())
+  clientId               String
+  client                 Client   @relation(fields: [clientId], references: [id])
+  ga4PropertyId          String   // digits only, e.g. "123456789" — the API wants "properties/123456789"
+  refreshTokenEncrypted  String   // encrypted with lib/crypto.ts before storage — never store plaintext
+  connectedAt            DateTime @default(now())
+  status                 String   @default("connected") // connected | revoked | error
+}
+
+// A connected Google Tag Manager container for a client. Same trust model as
+// GoogleAnalyticsProperty — the client adds AdPac's Google login as a user
+// on their GTM container (Admin > User Management) with Edit + Publish
+// permission, then the operator enters the account/container IDs they were
+// given. Unlike GA4, this scope can WRITE to a client's live site tracking,
+// so every tag deployment goes through ActionLog approval before anything
+// is created or published (actionType "DEPLOY_GTM_TAG") — never automatic.
+model GoogleTagManagerContainer {
+  id                     String   @id @default(cuid())
+  clientId               String
+  client                 Client   @relation(fields: [clientId], references: [id])
+  gtmAccountId           String   // GTM Account ID, e.g. "6012345678"
+  gtmContainerId         String   // GTM Container ID (Public ID is "GTM-XXXXXXX"; this is the numeric container ID from the API, e.g. "98765432")
+  workspaceId            String   // resolved once at connect time (verifyContainerAccess) — the "Default Workspace" tags get created/published through
+  refreshTokenEncrypted  String   // encrypted with lib/crypto.ts before storage — never store plaintext
+  connectedAt            DateTime @default(now())
+  status                 String   @default("connected") // connected | revoked | error
+}
+
+// A connected Google Business Profile account (OAuth) for a client — the
+// "branches" family of data (Business Information / Performance / Reviews
+// APIs), a separate Google product from Google Ads/GA4/GTM with its own
+// OAuth scope (business.manage) and its own Google-side access-approval
+// process (see lib/googleBusinessProfile.ts). One client can have multiple
+// physical branches under a single account — see BusinessLocation below.
+model GoogleBusinessProfileAccount {
+  id                    String   @id @default(cuid())
+  clientId              String
+  client                Client   @relation(fields: [clientId], references: [id])
+  gbpAccountId          String   // Google's account resource name, e.g. "accounts/1234567890"
+  refreshTokenEncrypted String   // encrypted with lib/crypto.ts before storage — never store plaintext
+  connectedAt           DateTime @default(now())
+  status                String   @default("connected") // connected | revoked | error
+
+  locations BusinessLocation[]
+}
+
+// One physical branch/location under a connected Business Profile account.
+model BusinessLocation {
+  id             String   @id @default(cuid())
+  accountId      String
+  account        GoogleBusinessProfileAccount @relation(fields: [accountId], references: [id])
+  gbpLocationId  String   // Google's location resource name, e.g. "locations/1234567890"
+  title          String   // the branch's display name, e.g. "Downtown Branch"
+  address        String?  // flattened single-line address, best-effort from storefrontAddress
+  primaryPhone   String?
+  openStatus     String   @default("UNSPECIFIED") // OPEN | CLOSED_TEMPORARILY | CLOSED_PERMANENTLY | UNSPECIFIED
+  hiddenFromList Boolean  @default(false) // purely a local display preference, same as Campaign.hiddenFromList
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  metrics    LocationMetric[]
+  reviews    BusinessReview[]
+  actionLogs ActionLog[]
+
+  @@unique([accountId, gbpLocationId])
+}
+
+// Daily performance snapshot for one branch, from the Business Profile
+// Performance API's fetchMultiDailyMetricsTimeSeries.
+model LocationMetric {
+  id                String   @id @default(cuid())
+  locationId        String
+  location          BusinessLocation @relation(fields: [locationId], references: [id])
+  date              DateTime
+  searchImpressions Int      @default(0) // BUSINESS_IMPRESSIONS_*_SEARCH (desktop+mobile combined)
+  mapsImpressions   Int      @default(0) // BUSINESS_IMPRESSIONS_*_MAPS (desktop+mobile combined)
+  callClicks        Int      @default(0) // CALL_CLICKS
+  websiteClicks     Int      @default(0) // WEBSITE_CLICKS
+  directionRequests Int      @default(0) // BUSINESS_DIRECTION_REQUESTS
+  conversations     Int      @default(0) // BUSINESS_CONVERSATIONS
+  bookings          Int      @default(0) // BUSINESS_BOOKINGS
+
+  @@unique([locationId, date])
+}
+
+// A customer review on one branch, synced from the Reviews API
+// (accounts.locations.reviews.list), plus AdPac's own reply tracking.
+model BusinessReview {
+  id              String   @id @default(cuid())
+  locationId      String
+  location        BusinessLocation @relation(fields: [locationId], references: [id])
+  gbpReviewName   String   // full resource name "accounts/*/locations/*/reviews/*" — needed as-is for the reply API call
+  reviewerName    String?  // null if the reviewer chose to stay anonymous
+  starRating      Int      // 1-5
+  comment         String?
+  createTime      DateTime
+  updateTime      DateTime
+  replyComment    String?   // our reply text, once drafted/posted
+  replyUpdateTime DateTime? // when Google last recorded the reply as updated
+  replyState      String    @default("NONE") // NONE | PENDING_APPROVAL | POSTED | REJECTED | FAILED — see lib/businessInsights.ts
+  syncedAt        DateTime  @default(now())
+
+  actionLogs ActionLog[]
+
+  @@unique([locationId, gbpReviewName])
+}
+
+// A connected Meta (Facebook + Instagram) ad account for a client — OAuth via
+// Facebook Login for Business. Facebook and Instagram deliberately share ONE
+// connection here: Meta's Marketing API has no separate "Instagram ad
+// account" — Instagram is just a placement option within a normal Meta ad
+// account's campaigns/ad sets, so one connection covers both surfaces.
+//
+// Token lifecycle is genuinely different from Google here, not just a naming
+// difference: Meta issues a long-lived USER access token (~60 days), never a
+// true never-expiring refresh token. lib/meta.ts re-exchanges it for a fresh
+// 60-day token on every sync (fb_exchange_token grant) so it effectively
+// never expires as long as syncs keep happening at least every ~60 days —
+// tokenExpiresAt tracks the current token's real expiry so a lapsed
+// connection can be surfaced in the UI rather than failing silently.
+model MetaAdAccount {
+  id                    String   @id @default(cuid())
+  clientId              String
+  client                Client   @relation(fields: [clientId], references: [id])
+  metaAdAccountId       String   // Meta's ad account ID, e.g. "act_1234567890"
+  accessTokenEncrypted  String   // long-lived (~60 day) user access token, encrypted with lib/crypto.ts — re-exchanged on every sync, never store plaintext
+  tokenExpiresAt        DateTime? // when the current accessTokenEncrypted actually expires, per Meta's own response — used to warn in the UI before a sync starts silently failing
+  currencyCode          String?  // the ad account's real billing currency (Meta's own `currency` field), fetched at connect time — same FX-conversion need as GoogleAdsAccount.currencyCode
+  connectedAt           DateTime @default(now())
+  status                String   @default("connected") // connected | revoked | error
+
+  campaigns MetaCampaign[]
+}
+
+// A Meta ad campaign, imported from an already-existing campaign on the
+// connected ad account (same "Import existing campaigns" model as Google
+// Ads — this integration manages/optimizes existing Meta campaigns via AI
+// insights, it does not (yet) generate brand-new AI-drafted Meta campaigns
+// the way the Google Ads side does, since Meta creative assets are a
+// materially bigger scope: images/video, not just text).
+model MetaCampaign {
+  id              String   @id @default(cuid())
+  adAccountId     String
+  adAccount       MetaAdAccount @relation(fields: [adAccountId], references: [id])
+  metaCampaignId  String   // Meta's numeric campaign ID
+  name            String
+  objective       String   // Meta's objective enum, e.g. "OUTCOME_TRAFFIC", "OUTCOME_SALES" — see lib/meta.ts
+  status          String   // ACTIVE | PAUSED | DELETED | ARCHIVED — Meta's own campaign status, synced as-is (unlike Google Ads' Campaign.status, there's no separate AdPac-side draft lifecycle here)
+  dailyBudgetCents Int?    // null if this campaign uses lifetime_budget or ad-set-level budgets instead
+  lifetimeBudgetCents Int?
+  hiddenFromList  Boolean  @default(false) // same local-only display preference as Campaign.hiddenFromList
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  dailyMetrics MetaDailyMetric[]
+  audienceMetrics MetaAudienceMetric[]
+  adSetMetrics MetaAdSetMetric[]
+  adMetrics    MetaAdMetric[]
+  actionLogs   ActionLog[]
+
+  @@unique([adAccountId, metaCampaignId])
+}
+
+// Ad-set-level performance, from the Marketing API's Insights endpoint at
+// level=adset plus a lightweight /adsets list call for current state
+// (status/budget/targeting) — the Meta counterpart to Google Ads'
+// AdGroupMetric. Meta ad sets are where targeting/budget/schedule actually
+// live (campaigns just set the objective), so this is the level that
+// matters most for "why is this campaign performing this way" diagnosis.
+model MetaAdSetMetric {
+  id               String   @id @default(cuid())
+  campaignId       String
+  campaign         MetaCampaign @relation(fields: [campaignId], references: [id])
+  date             DateTime
+  adSetId          String
+  adSetName        String
+  status           String   // ACTIVE | PAUSED | DELETED | ARCHIVED, as of this sync
+  dailyBudgetCents Int?
+  // Compact human-readable summary built from the ad set's targeting spec
+  // (age range, genders, top geo locations) — not a full structured targeting
+  // model, just enough to tell two ad sets apart at a glance. See
+  // summarizeTargeting in lib/meta.ts.
+  targetingSummary String?
+  impressions      Int      @default(0)
+  clicks           Int      @default(0)
+  costCents        Int      @default(0)
+  conversions      Float    @default(0)
+  conversionValueCents Int  @default(0)
+
+  @@unique([campaignId, date, adSetId])
+}
+
+// Individual ad (creative) performance within an ad set, from the Insights
+// endpoint at level=ad plus a lightweight /ads list call for current
+// name/status — the Meta counterpart to Google Ads' AdMetric.
+model MetaAdMetric {
+  id               String   @id @default(cuid())
+  campaignId       String
+  campaign         MetaCampaign @relation(fields: [campaignId], references: [id])
+  date             DateTime
+  adSetId          String
+  adId             String
+  name             String
+  status           String   // ACTIVE | PAUSED | DELETED | ARCHIVED, as of this sync
+  impressions      Int      @default(0)
+  clicks           Int      @default(0)
+  costCents        Int      @default(0)
+  conversions      Float    @default(0)
+  conversionValueCents Int  @default(0)
+
+  @@unique([campaignId, date, adId])
+}
+
+// Daily performance snapshot for one Meta campaign, from the Marketing API's
+// Insights endpoint (/{campaign-id}/insights) — same one-row-per-campaign-
+// per-day shape as DailyMetric.
+model MetaDailyMetric {
+  id                   String   @id @default(cuid())
+  campaignId           String
+  campaign             MetaCampaign @relation(fields: [campaignId], references: [id])
+  date                 DateTime
+  impressions          Int      @default(0)
+  clicks               Int      @default(0) // Meta's "clicks" (all clicks) — see lib/meta.ts for how this differs from link_click if ever split out
+  costCents             Int      @default(0) // Meta's "spend", converted to USD cents same as Google Ads' costCents
+  conversions          Float    @default(0) // summed from the "actions" array for whatever action_type the campaign's objective optimizes for — see lib/meta.ts
+  conversionValueCents Int      @default(0)
+  // Unique people reached ON THIS SPECIFIC DAY (Meta's "reach" field). Valid
+  // and meaningful per day, but deliberately NOT safe to sum across days for
+  // a period total — the same person reached on Monday and Tuesday counts
+  // once in each day's reach, so summing overcounts actual unique reach for
+  // the period. lib/meta.ts's daily fetch stores it as-is; any UI showing a
+  // period figure must either average it or clearly label it as a summed
+  // approximation, never present a summed total as "unique reach."
+  reach                Int      @default(0)
+
+  @@unique([campaignId, date])
+}
+
+// One row per campaign/day/dimension-value — the Meta counterpart to
+// Google Ads' AudienceMetric, same generic "one table covers every
+// breakdown dimension" shape. Populated via the Insights API's `breakdowns`
+// parameter (see fetchCampaignAudienceBreakdown in lib/meta.ts), one sync
+// call per dimension since Meta only allows specific breakdown
+// combinations per request, not every dimension in a single call.
+model MetaAudienceMetric {
+  id             String   @id @default(cuid())
+  campaignId     String
+  campaign       MetaCampaign @relation(fields: [campaignId], references: [id])
+  date           DateTime
+  dimension      String   // "age" | "gender" | "country" | "region" | "platform" | "hour"
+  dimensionValue String   // e.g. "25-34", "female", "US", "California", "facebook/feed", "14"
+  impressions    Int      @default(0)
+  clicks         Int      @default(0)
+  costCents      Int      @default(0)
+  conversions    Float    @default(0)
+
+  @@unique([campaignId, date, dimension, dimensionValue])
+}
+
+// A connected Snapchat ad account for a client — OAuth via Snap Business
+// Manager. Unlike Meta, Snapchat's Marketing API uses a conventional OAuth
+// 2.0 flow with a real refresh_token (no re-exchange dance needed): the
+// access token is short-lived (60 minutes) but the refresh_token itself
+// doesn't expire on its own, so lib/snapchat.ts just requests a fresh
+// access token with it whenever needed, the same shape as GoogleAdsAccount/
+// GoogleAnalyticsProperty/GoogleTagManagerContainer's refreshTokenEncrypted.
+// organizationId is stored because Snapchat's hierarchy is Organization ->
+// Ad Account (not a flat list of ad accounts like Meta) — needed to call
+// some endpoints and useful context in the UI.
+model SnapAdAccount {
+  id                    String   @id @default(cuid())
+  clientId              String
+  client                Client   @relation(fields: [clientId], references: [id])
+  organizationId        String   // Snap's Organization ID this ad account belongs to
+  snapAdAccountId       String   // Snap's Ad Account ID (UUID)
+  refreshTokenEncrypted String   // encrypted with lib/crypto.ts before storage — never store plaintext
+  connectedAt           DateTime @default(now())
+  status                String   @default("connected") // connected | revoked | error
+  // The account's real billing currency (Snapchat's own `currency` field,
+  // one of AUD/DKK/CAD/EUR/GBP/NOK/SEK/USD) — same FX-conversion need as
+  // GoogleAdsAccount.currencyCode/MetaAdAccount.currencyCode.
+  currencyCode          String?
+  timezone              String?  // Snap's own account timezone (e.g. "America/Los_Angeles") — stats are bucketed in this timezone, not UTC
+
+  campaigns SnapCampaign[]
+}
+
+// A Snapchat ad campaign, imported from an already-existing campaign on the
+// connected ad account — same "import existing" model as MetaCampaign.
+model SnapCampaign {
+  id                  String   @id @default(cuid())
+  adAccountId         String
+  adAccount           SnapAdAccount @relation(fields: [adAccountId], references: [id])
+  snapCampaignId      String   // Snap's campaign ID (UUID)
+  name                String
+  objective           String   // Snap's objective enum, e.g. "APP_INSTALL", "WEB_CONVERSION" — see lib/snapchat.ts
+  status              String   // ACTIVE | PAUSED — Snap's own campaign status, synced as-is
+  dailyBudgetCents    Int?     // converted from Snap's daily_budget_micro — null if the campaign uses ad-squad-level budgets instead
+  lifetimeBudgetCents Int?     // converted from lifetime_spend_cap_micro
+  hiddenFromList      Boolean  @default(false) // same local-only display preference as Campaign.hiddenFromList / MetaCampaign.hiddenFromList
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  dailyMetrics SnapDailyMetric[]
+  actionLogs   ActionLog[]
+
+  @@unique([adAccountId, snapCampaignId])
+}
+
+// Daily performance snapshot for one Snapchat campaign, from the Marketing
+// API's Stats endpoint (GET /adaccounts/{id}/stats?breakdown=campaign) —
+// same one-row-per-campaign-per-day shape as DailyMetric/MetaDailyMetric.
+// `clicks` holds Snapchat's own "swipes" metric (a swipe-up on the ad) —
+// named `clicks` rather than `swipes` so this table, and everything built
+// on top of it, can reuse the exact same reporting code shape as
+// DailyMetric/MetaDailyMetric instead of a third, differently-named field.
+model SnapDailyMetric {
+  id                   String   @id @default(cuid())
+  campaignId           String
+  campaign             SnapCampaign @relation(fields: [campaignId], references: [id])
+  date                 DateTime
+  impressions          Int      @default(0)
+  clicks               Int      @default(0) // Snapchat's "swipes" (swipe-up count)
+  costCents            Int      @default(0) // Snapchat's "spend" (micro-currency), converted to USD cents same as Google Ads'/Meta's costCents
+  conversions          Float    @default(0) // summed across Snapchat's various conversion_* fields — see lib/snapchat.ts for which ones
+  conversionValueCents Int      @default(0) // summed across the matching conversion_*_value fields
+
+  @@unique([campaignId, date])
+}
+
+// A campaign — may exist only as an AI-generated draft, or be pushed live to Google Ads
+model Campaign {
+  id                  String    @id @default(cuid())
+  clientId            String
+  client              Client    @relation(fields: [clientId], references: [id])
+  googleAdsAccountId  String?
+  googleAdsAccount    GoogleAdsAccount? @relation(fields: [googleAdsAccountId], references: [id])
+  googleCampaignId    String?   // set once actually created on Google Ads
+  name                String
+  type                String    // SEARCH | PERFORMANCE_MAX | DISPLAY
+  status              String    @default("DRAFT")
+  dailyBudgetCents    Int
+  aiBriefJson         String    // full structured AI output: keywords, ad copy, targeting, rationale
+  hiddenFromList      Boolean   @default(false) // purely a local display preference — hides this campaign from the default Campaigns list view (still there, still real, just decluttered). Never touches Google Ads, and works regardless of status.
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  dailyMetrics     DailyMetric[]
+  audienceMetrics  AudienceMetric[]
+  keywordMetrics   KeywordMetric[]
+  searchTermMetrics SearchTermMetric[]
+  adGroupMetrics   AdGroupMetric[]
+  adMetrics        AdMetric[]
+  assetGroupMetrics AssetGroupMetric[]
+  actionLogs       ActionLog[]
+}
+
+// Daily performance snapshot, pulled from the Google Ads API
+model DailyMetric {
+  id              String   @id @default(cuid())
+  campaignId      String
+  campaign        Campaign @relation(fields: [campaignId], references: [id])
+  date            DateTime
+  impressions     Int      @default(0)
+  clicks          Int      @default(0)
+  costCents       Int      @default(0)
+  conversions     Float    @default(0)
+  conversionValueCents Int @default(0)
+  // Search auction-visibility metrics (campaign-level, Google Ads'
+  // search_impression_share/search_budget_lost_impression_share/
+  // search_rank_lost_impression_share) — what share of available auctions
+  // this campaign's ads showed in, and, of what it lost, how much was
+  // budget-constrained vs. rank/quality-constrained. Only populated for
+  // Search campaigns; null for channel types Google doesn't report these
+  // for (e.g. Performance Max, Display). 0-100 scale, not 0-1.
+  searchImpressionSharePct Float?
+  searchBudgetLostSharePct Float?
+  searchRankLostSharePct   Float?
+  // How often this campaign's ad appeared at the top of the page / the
+  // absolute top position, among the auctions it appeared in at all —
+  // Google Ads' search_top_impression_share / search_absolute_top_
+  // impression_share. This is the closest thing to competitive "Auction
+  // Insights" data the Google Ads API actually exposes: named-competitor
+  // overlap/outranking comparisons are a UI/export-only report with no API
+  // resource (confirmed against Google's own field reference — there's no
+  // auction_insight resource in it). 0-100 scale, like the share metrics
+  // above.
+  searchTopImpressionSharePct         Float?
+  searchAbsoluteTopImpressionSharePct Float?
+  // The campaign's bid strategy as of this day's sync (e.g.
+  // "MAXIMIZE_CONVERSIONS", "MANUAL_CPC", "TARGET_ROAS") — campaign-level
+  // and slow-changing, stored per day alongside everything else here rather
+  // than in its own table since DailyMetric is already the one row-per-
+  // campaign-per-day anchor.
+  biddingStrategyType      String?
+
+  @@unique([campaignId, date])
+}
+
+// Audience-segmented performance — device, age/gender, geographic, and (see
+// below) day-of-week/hour breakdowns, pulled from Google Ads'
+// age_range_view/gender_view/geographic_view/campaign(segments.device,
+// segments.day_of_week, segments.hour) resources. One generic table
+// covering all these dimensions rather than a near-identical table per one.
+model AudienceMetric {
+  id                   String   @id @default(cuid())
+  campaignId           String
+  campaign             Campaign @relation(fields: [campaignId], references: [id])
+  date                 DateTime
+  dimension            String   // "device" | "age_range" | "gender" | "location" | "day_of_week" | "hour"
+  dimensionValue       String   // e.g. "MOBILE", "AGE_RANGE_25_34", "FEMALE", "Beirut, Lebanon", "MONDAY", "14"
+  impressions          Int      @default(0)
+  clicks               Int      @default(0)
+  costCents            Int      @default(0)
+  conversions          Float    @default(0)
+  conversionValueCents Int      @default(0)
+
+  @@unique([campaignId, date, dimension, dimensionValue])
+}
+
+// Keyword-level performance, from Google Ads' keyword_view resource. Lets a
+// client see exactly which keywords they're bidding on are earning their
+// spend vs. wasting it, not just the campaign total. Keyed by the actual
+// ad_group_criterion identity (ad group + keyword text + match type) since
+// the same keyword text can appear more than once in a campaign under
+// different ad groups or match types.
+model KeywordMetric {
+  id                   String   @id @default(cuid())
+  campaignId           String
+  campaign             Campaign @relation(fields: [campaignId], references: [id])
+  date                 DateTime
+  adGroupId            String   // Google's numeric ad group ID
+  adGroupName          String
+  keywordText          String
+  matchType            String   // EXACT | PHRASE | BROAD
+  impressions          Int      @default(0)
+  clicks               Int      @default(0)
+  costCents            Int      @default(0)
+  conversions          Float    @default(0)
+  conversionValueCents Int      @default(0)
+  avgCpcCents          Int      @default(0)
+  qualityScore         Int?     // 1-10; null if Google hasn't scored it yet (e.g. too little traffic)
+
+  @@unique([campaignId, date, adGroupId, keywordText, matchType])
+}
+
+// The actual search queries that triggered an ad, from Google Ads'
+// search_term_view resource — distinct from KeywordMetric (the keyword
+// actually bid on): one keyword, especially BROAD/PHRASE match, can match
+// many different real searches. This is what reveals irrelevant traffic
+// worth excluding with a negative keyword, which keyword-level data alone
+// can't show.
+// matchedKeywordText is deliberately left unpopulated (always null) by
+// lib/googleAds.ts's fetchSearchTermMetrics — selecting a keyword segment
+// alongside search_term_view makes Google Ads silently drop every row with
+// no explicit matching criterion (all Dynamic Search Ads traffic, notably),
+// which is worse than not having the field. Kept on the model in case a
+// safe way to populate it is added later, but not part of the identity key
+// below (a nullable field in a composite unique index is also awkward on
+// SQLite).
+model SearchTermMetric {
+  id                   String   @id @default(cuid())
+  campaignId           String
+  campaign             Campaign @relation(fields: [campaignId], references: [id])
+  date                 DateTime
+  searchTerm           String
+  matchedKeywordText   String?
+  matchType            String?  // how it matched: EXACT | PHRASE | BROAD | NONE (matched a dynamic/auto target)
+  impressions          Int      @default(0)
+  clicks               Int      @default(0)
+  costCents            Int      @default(0)
+  conversions          Float    @default(0)
+  conversionValueCents Int      @default(0)
+
+  @@unique([campaignId, date, searchTerm])
+}
+
+// Ad-group-level performance, from Google Ads' ad_group resource — one
+// level between the campaign total and individual keywords/ads, useful once
+// a campaign has more than one ad group and the campaign total stops being
+// specific enough.
+model AdGroupMetric {
+  id                   String   @id @default(cuid())
+  campaignId           String
+  campaign             Campaign @relation(fields: [campaignId], references: [id])
+  date                 DateTime
+  adGroupId            String
+  adGroupName          String
+  impressions          Int      @default(0)
+  clicks               Int      @default(0)
+  costCents            Int      @default(0)
+  conversions          Float    @default(0)
+  conversionValueCents Int      @default(0)
+
+  @@unique([campaignId, date, adGroupId])
+}
+
+// Individual ad (creative) performance, from Google Ads' ad_group_ad
+// resource. `headline` is a short, human-readable label built from the ad's
+// first responsive-search-ad headline (or "(no headline)") — enough to
+// tell two ads apart in a list, without needing a separate table for every
+// RSA headline/description asset combination.
+model AdMetric {
+  id                   String   @id @default(cuid())
+  campaignId           String
+  campaign             Campaign @relation(fields: [campaignId], references: [id])
+  date                 DateTime
+  adGroupId            String
+  adId                 String
+  headline             String
+  status               String   // ENABLED | PAUSED | REMOVED, as of this sync
+  impressions          Int      @default(0)
+  clicks               Int      @default(0)
+  costCents            Int      @default(0)
+  conversions          Float    @default(0)
+  conversionValueCents Int      @default(0)
+
+  @@unique([campaignId, date, adId])
+}
+
+// Performance Max asset-group-level performance, from Google Ads'
+// asset_group resource — the PMax equivalent of AdGroupMetric/KeywordMetric,
+// since PMax campaigns have neither traditional ad groups nor keywords.
+// Asset-level detail (which specific headline/image is rated BEST/GOOD/LOW
+// by Google) is deliberately NOT stored here — it's a live current-state
+// quality signal, not really a daily metric worth a full sync history, so
+// it's fetched on demand instead (see fetchAssetGroupAssetPerformance in
+// lib/googleAds.ts and GET /api/metrics/asset-groups).
+model AssetGroupMetric {
+  id                   String   @id @default(cuid())
+  campaignId           String
+  campaign             Campaign @relation(fields: [campaignId], references: [id])
+  date                 DateTime
+  assetGroupId         String
+  assetGroupName       String
+  status               String   // ENABLED | PAUSED | REMOVED, as of this sync
+  impressions          Int      @default(0)
+  clicks               Int      @default(0)
+  costCents            Int      @default(0)
+  conversions          Float    @default(0)
+  conversionValueCents Int      @default(0)
+
+  @@unique([campaignId, date, assetGroupId])
+}
+
+// A manually-issued invoice for a client — phase 1 has no payment
+// processor integration. AdPac staff create these, hand them to the client
+// (bank transfer, cash, whatever the client actually pays with), and mark
+// them PAID by hand once payment is confirmed. This is the client's payment
+// history / prepaid-invoice record.
+model Invoice {
+  id            String    @id @default(cuid())
+  clientId      String
+  client        Client    @relation(fields: [clientId], references: [id])
+  invoiceNumber String    @unique // e.g. "INV-0001"
+  amountCents   Int
+  description   String? // e.g. "August 2026 ad spend + management fee"
+  status        String    @default("UNPAID") // UNPAID | PAID
+  issuedAt      DateTime  @default(now())
+  paidAt        DateTime?
+  paymentMethod String? // e.g. "Bank transfer", "Cash", "Wire transfer" — set when marked paid
+  paymentLink   String? // manually pasted-in Stripe Payment Link (or any other) URL for this invoice —
+                         // no Stripe API integration yet, this is just a link the client can click to pay.
+                         // Shown as "Pay online" on the invoice PDF and in the dashboard while UNPAID.
+  createdByUserId String?
+  source          String  @default("MANUAL") // MANUAL | RECHARGE_REQUEST — RECHARGE_REQUEST invoices were
+                                              // self-serve created via POST /api/invoices/recharge-request
+                                              // (a STAFF user with invoice-view access clicking "Request
+                                              // recharge"), not created directly by an admin. Still a normal
+                                              // UNPAID invoice otherwise — admin reviews and marks it paid
+                                              // the usual way, which credits tokens as normal.
+  requestedByUserId String? // set only when source is RECHARGE_REQUEST — who asked for it
+  createdAt     DateTime  @default(now())
+}
+
+// Every AI-proposed or AI-executed action — the audit trail.
+// Nothing touches real ad spend without a row here.
+model ActionLog {
+  id               String    @id @default(cuid())
+  clientId         String
+  client           Client    @relation(fields: [clientId], references: [id])
+  campaignId       String?
+  campaign         Campaign? @relation(fields: [campaignId], references: [id])
+  // Google Business Profile counterparts to campaignId — nullable, only set
+  // for the LOCATION_ANOMALY_ALERT / DRAFT_REVIEW_REPLY insight types (see
+  // lib/businessInsights.ts). A row is either campaign-shaped or
+  // location/review-shaped, never both.
+  locationId       String?
+  location         BusinessLocation? @relation(fields: [locationId], references: [id])
+  businessReviewId String?
+  businessReview   BusinessReview?   @relation(fields: [businessReviewId], references: [id])
+  // Meta (Facebook/Instagram) counterpart to campaignId — nullable, only set
+  // for Meta AI insight types (see lib/metaInsights.ts). A row is either
+  // Google-Ads-campaign-shaped, GBP-shaped, or Meta-campaign-shaped, never
+  // more than one of the three.
+  metaCampaignId   String?
+  metaCampaign     MetaCampaign? @relation(fields: [metaCampaignId], references: [id])
+  // Snapchat counterpart to campaignId/metaCampaignId — nullable, reserved
+  // for a future Snapchat AI-insights pass (lib/snapInsights.ts, not yet
+  // built). A row is either Google-Ads-campaign-shaped, GBP-shaped,
+  // Meta-campaign-shaped, or Snap-campaign-shaped, never more than one.
+  snapCampaignId   String?
+  snapCampaign     SnapCampaign? @relation(fields: [snapCampaignId], references: [id])
+  actionType       String    // CREATE_CAMPAIGN | ADJUST_BUDGET | PAUSE_KEYWORD | PAUSE_AD | APPLY_GOOGLE_RECOMMENDATION
+  payloadJson      String    // structured description of the proposed change
+  status           String    @default("PENDING_APPROVAL")
+  proposedBy       String    @default("ai") // "ai" or a User id
+  approvedByUserId String?
+  createdAt        DateTime  @default(now())
+  executedAt       DateTime?
+  errorMessage     String?
+}
+
+// Admin-defined override for a specific client+month's "AI optimization
+// impact" showcase metric (see /api/ai-insights/impact). By default that
+// rate is a deterministic placeholder (not a measured figure — see the
+// route's comments) — this lets an admin type in a specific rate for a
+// given month instead, e.g. once a real number is agreed on with the
+// client, or just to control what a demo shows. Months with no row here
+// still fall back to the placeholder calculation.
+model AiImpactOverride {
+  id                      String   @id @default(cuid())
+  clientId                String
+  client                  Client   @relation(fields: [clientId], references: [id])
+  monthKey                String   // e.g. "2026-07"
+  optimizationRatePercent Float
+  setByUserId             String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@unique([clientId, monthKey])
+}
+
+// Single global row controlling how a paid invoice converts into prepaid
+// token credits (tokensPerDollar). Admin-only to change (see PUT
+// /api/token-settings). id is always the literal "global" — there's only
+// ever one row.
+model TokenSetting {
+  id              String   @id @default("global")
+  tokensPerDollar Float    @default(5)
+  updatedByUserId String?
+  updatedAt       DateTime @updatedAt
+}
+
+// Single global row (same "id always = 'global'" pattern as TokenSetting)
+// for app-wide feature toggles an admin controls — starting with whether
+// the beta "measured" AI impact card (RealAIImpactCard, see
+// lib/realImpact.ts) is visible to non-admin staff. Admins always see it
+// regardless of this flag; it only gates STAFF visibility, so an admin can
+// try it out privately before deciding staff should see it too.
+model AppSetting {
+  id                      String   @id @default("global")
+  realImpactVisibleToStaff Boolean @default(false)
+  updatedByUserId         String?
+  updatedAt               DateTime @updatedAt
+}
+
+// Ledger entry for a client's prepaid token balance — a client's balance is
+// the sum of all their TokenTransaction.tokens. TOPUP entries are created
+// automatically when an invoice is marked PAID (amountCents/100 *
+// TokenSetting.tokensPerDollar at that moment). REVERSAL entries are
+// created if that invoice is later unmarked paid (netting the balance back
+// to zero for that invoice), or to cancel out a prior SPEND when the
+// spending mechanism itself changes (see below). ADJUSTMENT is reserved for
+// any future manual correction. SPEND entries are created automatically,
+// once per calendar day per client. The basis is the AI optimization
+// impact value (that month's total conversion value × the optimization
+// rate for that month — see getOptimizationRatePercent in lib/tokens.ts,
+// shared with GET /api/ai-insights/impact so the rate always matches what
+// the Impact card shows), but that monthly impact total is distributed
+// unevenly across the days of the month, weighted by each day's share of
+// month-to-date ad spend — see ensureDailySpend in lib/tokens.ts, called
+// from /api/metrics/sync. Locked in the first time each day's metrics are
+// synced, using whatever month-to-date totals are known at that moment
+// (even for the still-in-progress current day), and never recomputed after
+// that even as later days add more to the month-to-date totals. monthKey
+// is set on SPEND rows for grouping/debugging (which calendar month a
+// day's spend belongs to); dayKey ("2026-09-24") is the actual idempotency
+// key guaranteeing one SPEND per client+day. (Two earlier versions of this
+// mechanism existed and were reversed: one locked in a single lump sum per
+// month with no daily distribution, another switched the basis to raw
+// daily ad-spend cost with no impact-value basis at all.) Positive tokens
+// = credit, negative = debit.
+model TokenTransaction {
+  id              String   @id @default(cuid())
+  clientId        String
+  client          Client   @relation(fields: [clientId], references: [id])
+  invoiceId       String?  // the invoice that triggered this TOPUP/REVERSAL — null otherwise
+  monthKey        String?  // set on SPEND rows for grouping/debugging — see comment above
+  dayKey          String?  // e.g. "2026-09-24" — set only for SPEND rows, guarantees one SPEND per client+day
+  type            String   @default("TOPUP") // TOPUP | REVERSAL | ADJUSTMENT | SPEND
+  tokens          Float
+  note            String?
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+}
