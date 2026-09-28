@@ -26,6 +26,7 @@ import ConnectMetaButton from './ConnectMetaButton';
 import MetaReportingDashboard from './MetaReportingDashboard';
 import MetaAdPerformanceCard from './MetaAdPerformanceCard';
 import MetaInsightsPanel from './MetaInsightsPanel';
+import CreativeTestsPanel from './CreativeTestsPanel';
 import ConnectSnapchatButton from './ConnectSnapchatButton';
 import SnapReportingDashboard from './SnapReportingDashboard';
 import AIInsightsPanel from './AIInsightsPanel';
@@ -637,22 +638,29 @@ export default async function ClientPage({
   // Position capability, so any staff member assigned EDIT access to this
   // client can use it without an admin having to also remember to flip a
   // capability toggle for them.
-  if (account && canEdit(access)) {
+  if ((account || metaAccount) && canEdit(access)) {
     tabs.push({
       id: 'ai-insights',
       label: 'AI Insights',
       count: pendingInsightCount,
       content: (
         <>
-          <AIImpactCard clientId={client.id} isAdmin={isAdmin} />
-          {showRealImpactCard && (
+          {account && <AIImpactCard clientId={client.id} isAdmin={isAdmin} />}
+          {account && showRealImpactCard && (
             <RealAIImpactCard clientId={client.id} isAdmin={isAdmin} initialVisibleToStaff={realImpactVisibleToStaff} />
           )}
-          <AIInsightsPanel
+          {account && (
+            <AIInsightsPanel
+              clientId={client.id}
+              campaignNames={campaignNames}
+              insights={aiInsights}
+              outcomes={insightOutcomes}
+            />
+          )}
+          <CreativeTestsPanel
             clientId={client.id}
-            campaignNames={campaignNames}
-            insights={aiInsights}
-            outcomes={insightOutcomes}
+            googleCampaigns={client.campaigns.map((c) => ({ id: c.id, name: c.name }))}
+            metaCampaigns={metaAccount ? metaAccount.campaigns.map((c) => ({ id: c.id, name: c.name })) : []}
           />
         </>
       ),

@@ -1231,6 +1231,35 @@ export async function updateResponsiveSearchAd(
 }
 
 /**
+ * Pauses (or re-enables) a single ad within an ad group — the execution
+ * side of a Creative A/B Test's losing variant (see lib/creativeTests.ts).
+ * Builds the ad_group_ad resource name directly from adGroupId + adId
+ * (Google's own `customers/{cid}/adGroupAds/{ad_group_id}~{ad_id}` format)
+ * rather than looking it up first, since both ids are already known from
+ * AdMetric/CreativeTestVariant.
+ */
+export async function setAdStatus(
+  customerId: string,
+  refreshToken: string,
+  adGroupId: string,
+  adId: string,
+  status: 'ENABLED' | 'PAUSED'
+) {
+  const accessToken = await getAccessToken(refreshToken);
+  const resourceName = `customers/${customerId}/adGroupAds/${adGroupId}~${adId}`;
+
+  const res = await fetch(`${ADS_API_BASE}/customers/${customerId}/adGroupAds:mutate`, {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify({
+      operations: [{ update: { resourceName, status }, updateMask: 'status' }],
+    }),
+  });
+  if (!res.ok) throw new Error(`setAdStatus failed: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+/**
  * Adds campaign-level negative keywords (PHRASE match) — the execution side
  * of the ADD_NEGATIVE_KEYWORDS AI insight (see lib/aiInsights.ts). PHRASE
  * match on the exact wasted search term, same match-type convention as the

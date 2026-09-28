@@ -186,6 +186,25 @@ async function runCycle() {
     console.error('[scheduler] Meta AI review request failed:', err.message);
   }
 
+  // Creative A/B tests — deterministic (no LLM call), runs after both the
+  // Google Ads and Meta sync/review cycles above so it's evaluating this
+  // cycle's freshly-synced AdMetric/MetaAdMetric rows. See
+  // lib/creativeTests.ts.
+  try {
+    const res = await fetch(`${url}/api/creative-tests/evaluate`, {
+      method: 'POST',
+      headers: { 'x-sync-secret': secret },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      console.error(`[scheduler] Creative A/B test evaluation failed (${res.status}):`, data.error ?? data);
+    } else {
+      console.log(`[scheduler] Creative A/B tests: ${data.created ?? 0} new winner(s) of ${data.evaluated ?? 0} running test(s)`);
+    }
+  } catch (err: any) {
+    console.error('[scheduler] Creative A/B test evaluation request failed:', err.message);
+  }
+
   // Snapchat — same non-fatal, never-blocks-earlier-cycles treatment as
   // Meta above. No AI-review cycle yet (lib/snapInsights.ts not built —
   // see SnapCampaign.actionLogs/ActionLog.snapCampaignId reserved for it).

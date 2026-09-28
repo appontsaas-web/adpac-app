@@ -50,6 +50,7 @@ model User {
   clients     Client[]
   assignments ClientAssignment[]
   monthlyGoalsSet ClientMonthlyGoal[] // goals THIS user set (any past or current author), not goals for clients they own
+  creativeTestsCreated CreativeTest[]
 }
 
 // A named capability bundle ("Campaign Manager", "Reporting Viewer", etc.)
@@ -119,6 +120,7 @@ model Client {
   aiImpactOverrides AiImpactOverride[]
   tokenTransactions TokenTransaction[]
   monthlyGoals      ClientMonthlyGoal[]
+  creativeTests     CreativeTest[]
 }
 
 // A staff-stated goal for THIS client for one calendar month — separate from
@@ -386,6 +388,7 @@ model MetaCampaign {
   adSetMetrics MetaAdSetMetric[]
   adMetrics    MetaAdMetric[]
   actionLogs   ActionLog[]
+  creativeTests CreativeTest[]
 
   @@unique([adAccountId, metaCampaignId])
 }
@@ -582,6 +585,7 @@ model Campaign {
   adMetrics        AdMetric[]
   assetGroupMetrics AssetGroupMetric[]
   actionLogs       ActionLog[]
+  creativeTests    CreativeTest[]
 }
 
 // Daily performance snapshot, pulled from the Google Ads API
@@ -830,7 +834,14 @@ model ActionLog {
   // Meta-campaign-shaped, or Snap-campaign-shaped, never more than one.
   snapCampaignId   String?
   snapCampaign     SnapCampaign? @relation(fields: [snapCampaignId], references: [id])
-  actionType       String    // CREATE_CAMPAIGN | ADJUST_BUDGET | PAUSE_KEYWORD | PAUSE_AD | APPLY_GOOGLE_RECOMMENDATION
+  // CreativeTest counterpart to campaignId/metaCampaignId/etc — only set for
+  // the AB_TEST_WINNER insight type (see lib/creativeTests.ts). Still also
+  // sets campaignId OR metaCampaignId (whichever platform the test is on) so
+  // this stays visible in the existing per-platform insight panels, unlike
+  // the other alternatives above which are mutually exclusive with those.
+  creativeTestId   String?
+  creativeTest     CreativeTest? @relation(fields: [creativeTestId], references: [id])
+  actionType       String    // CREATE_CAMPAIGN | ADJUST_BUDGET | PAUSE_KEYWORD | PAUSE_AD | APPLY_GOOGLE_RECOMMENDATION | AB_TEST_WINNER
   payloadJson      String    // structured description of the proposed change
   status           String    @default("PENDING_APPROVAL")
   proposedBy       String    @default("ai") // "ai" or a User id
@@ -922,4 +933,56 @@ model TokenTransaction {
   note            String?
   createdByUserId String?
   createdAt       DateTime @default(now())
+}
+
+// A running creative (ad copy) A/B test — two or more existing ads within
+// the SAME ad group (Google) or ad set (Meta), so traffic-split is real
+// rather than comparing ads that were never actually competing for the same
+// impressions. Variant-level performance is read from the ad-level metric
+// tables that already exist (AdMetric / MetaAdMetric) — no new sync
+// machinery needed, this just aggregates rows dated on/after startedAt.
+// Winner determination is deterministic statistics (see
+// lib/creativeTests.ts's evaluateTest — a two-proportion z-test), NOT an
+// LLM call, same reasoning as the rest of aiInsights.ts: arithmetic belongs
+// in plain TypeScript, not a model's judgment. A test is platform-exclusive
+// — exactly one of campaignId/metaCampaignId is set, matching the same
+// convention as ActionLog below.
+model CreativeTest {
+  id              String    @id @default(cuid())
+  clientId        String
+  client          Client    @relation(fields: [clientId], references: [id])
+  platform        String    // GOOGLE_ADS | META
+  campaignId      String?
+  campaign        Campaign? @relation(fields: [campaignId], references: [id])
+  metaCampaignId  String?
+  metaCampaign    MetaCampaign? @relation(fields: [metaCampaignId], references: [id])
+  groupId         String    // Google ad_group.id or Meta adset_id — variants must share this
+  name            String
+  status          String    @default("RUNNING") // RUNNING | WINNER_FOUND | COMPLETED | ARCHIVED
+  startedAt       DateTime  @default(now())
+  endedAt         DateTime?
+  createdByUserId String
+  createdBy       User      @relation(fields: [createdByUserId], references: [id])
+  createdAt       DateTime  @default(now())
+
+  variants   CreativeTestVariant[]
+  actionLogs ActionLog[]
+}
+
+// One ad in a CreativeTest. adGroupId is stored redundantly (also derivable
+// from the parent test's groupId for Google, but kept explicit here since
+// pausing a Google ad requires both adGroupId and adId to build the
+// ad_group_ad resource name — see setAdStatus in lib/googleAds.ts).
+model CreativeTestVariant {
+  id        String   @id @default(cuid())
+  testId    String
+  test      CreativeTest @relation(fields: [testId], references: [id])
+  adId      String
+  adGroupId String?  // Google only
+  label     String   // "A", "B", "C"...
+  isWinner  Boolean  @default(false)
+  isPaused  Boolean  @default(false) // true once paused as a losing variant
+  createdAt DateTime @default(now())
+
+  @@unique([testId, adId])
 }

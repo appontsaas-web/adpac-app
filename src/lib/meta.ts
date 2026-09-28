@@ -706,3 +706,13 @@ export async function updateCampaignDailyBudget(
 ): Promise<void> {
   await apiPost(metaCampaignId, accessToken, { daily_budget: String(Math.round(newDailyBudgetCents)) });
 }
+
+/**
+ * Pauses (or re-enables) a single ad — the Meta execution side of a
+ * Creative A/B Test's losing variant (see lib/creativeTests.ts). Same
+ * apiPost(<object-id>, ...) pattern as setCampaignStatus above, just aimed
+ * at the ad id instead of the campaign id.
+ */
+export async function setAdStatus(adId: string, accessToken: string, status: 'ACTIVE' | 'PAUSED'): Promise<void> {
+  await apiPost(adId, accessToken, { status });
+}
