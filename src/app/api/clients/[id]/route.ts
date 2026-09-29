@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, hasCapability } from '@/lib/access';
 import { db } from '@/lib/db';
+import { sendPortalLoginLink } from '@/lib/clientPortalAuth';
 
 // PATCH /api/clients/[id]
 // Body: any subset of { name, website, industry, monthlyBudget, primaryGoal, adLanguage, targetLocations, spendGuardrailEnabled }
@@ -41,7 +42,25 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.spendGuardrailEnabled !== undefined) data.spendGuardrailEnabled = !!body.spendGuardrailEnabled;
 
   try {
+    const before = await db.client.findUnique({ where: { id: params.id }, select: { portalContactEmail: true } });
     const client = await db.client.update({ where: { id: params.id }, data });
+
+    // A portal contact email that's new or just changed gets an immediate
+    // sign-in link — otherwise nothing tells the client the portal exists
+    // until staff separately sends them a plan. Best-effort: a failed send
+    // here shouldn't block the save that already succeeded.
+    const emailChanged =
+      body.portalContactEmail !== undefined &&
+      client.portalContactEmail &&
+      client.portalContactEmail !== before?.portalContactEmail;
+    if (emailChanged) {
+      try {
+        await sendPortalLoginLink(client.id);
+      } catch (err: any) {
+        console.error('Portal welcome email failed:', err.message);
+      }
+    }
+
     return NextResponse.json({ client });
   } catch (err: any) {
     console.error('PATCH /api/clients/[id] failed:', err.message);

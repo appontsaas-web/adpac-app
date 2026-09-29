@@ -55,6 +55,7 @@ export default function PortalContactForm({
       <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: 12 }}>
         Who at this client can sign into their portal (magic-link email, no password) to fill the monthly
         goals/audience form and review &amp; approve plans. Leave blank to keep the portal off for this client.
+        Saving a new or changed email sends them a sign-in link right away.
       </p>
       <label>Contact name</label>
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Doe" disabled={readOnly} />

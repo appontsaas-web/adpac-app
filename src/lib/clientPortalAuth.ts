@@ -49,7 +49,7 @@ export async function sendPortalLoginLink(clientId: string): Promise<{ sent: boo
   });
 
   const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3010';
-  const link = `${baseUrl}/portal/verify?token=${raw}`;
+  const link = `${baseUrl}/api/portal/verify?token=${raw}`;
 
   await sendMail({
     to: client.portalContactEmail,
