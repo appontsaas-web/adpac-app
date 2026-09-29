@@ -51,6 +51,7 @@ model User {
   assignments ClientAssignment[]
   monthlyGoalsSet ClientMonthlyGoal[] // goals THIS user set (any past or current author), not goals for clients they own
   creativeTestsCreated CreativeTest[]
+  marketingPlansCreated MarketingPlan[]
 }
 
 // A named capability bundle ("Campaign Manager", "Reporting Viewer", etc.)
@@ -98,6 +99,13 @@ model Client {
                             // whose description contains "Starter Bundle - 3 Months" is marked PAID —
                             // that invoice type extends validity only, it does NOT also top up tokens.
                             // Purely informational for now — nothing in the app gates access on this.
+  // Client Portal contact — the person at the client's business who signs
+  // into /portal (magic-link, no password — see lib/clientPortalAuth.ts).
+  // Nullable: the portal is opt-in per client until staff sets this, and a
+  // client with no portal contact simply never gets a monthly-form/plan
+  // email and can't sign in.
+  portalContactName  String?
+  portalContactEmail String?
   spendGuardrailEnabled Boolean @default(true)
                             // Hard safety net (see lib/spendGuardrail.ts): when true and monthlyBudget is
                             // set, every scheduler cycle projects this client's month-end spend from
@@ -121,6 +129,10 @@ model Client {
   tokenTransactions TokenTransaction[]
   monthlyGoals      ClientMonthlyGoal[]
   creativeTests     CreativeTest[]
+  monthlyInputs     MonthlyInput[]
+  marketingPlans    MarketingPlan[]
+  portalTokens      ClientPortalToken[]
+  portalSessions    ClientPortalSession[]
 }
 
 // A staff-stated goal for THIS client for one calendar month — separate from
@@ -1027,4 +1039,100 @@ model CallRequest {
   createdAt      DateTime @default(now())
   notifiedAt     DateTime?
   confirmedAt    DateTime?
+}
+
+// ---------------------------------------------------------------------------
+// Client Portal — a separate, lightweight (magic-link, no password) sign-in
+// for the CLIENT themselves, distinct from the staff NextAuth session used
+// under /dashboard. See lib/clientPortalAuth.ts. Feeds Persona Building &
+// Audience Study (lib/personaBuilder.ts): the client's own stated goal/
+// audience each month, combined with real AudienceMetric/MetaAudienceMetric
+// demographic data already synced from Google Ads/Meta, is what lets Claude
+// build personas and ad copy grounded in more than guesswork.
+// ---------------------------------------------------------------------------
+
+// One-time login link, emailed to Client.portalContactEmail. Hashed at rest
+// (tokenHash, sha256) same reasoning as a password — the raw token only
+// ever exists in the emailed URL and briefly in memory when verifying it.
+// Single-use (usedAt) and short-lived (expiresAt), same shape as any
+// password-reset-link design.
+model ClientPortalToken {
+  id         String    @id @default(cuid())
+  clientId   String
+  client     Client    @relation(fields: [clientId], references: [id])
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+// A signed-in client portal session — deliberately its own table rather
+// than a JWT, so a session can be listed/revoked server-side (e.g. if a
+// client's staff contact changes). The session cookie holds only the raw
+// token; tokenHash (sha256) is what's stored, same pattern as
+// ClientPortalToken above.
+model ClientPortalSession {
+  id         String   @id @default(cuid())
+  clientId   String
+  client     Client   @relation(fields: [clientId], references: [id])
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}
+
+// The client's own monthly input — what THEY say their goal and target
+// audience are, in their own words. Distinct from ClientMonthlyGoal (a
+// STAFF-set structured metric target used for AI pacing) — this is
+// client-authored free text, the raw material lib/personaBuilder.ts feeds
+// to Claude alongside real audience-demographic data. The portal forces
+// this: a client can't reach anything else in /portal until the current
+// month's row exists (see /portal page.tsx's gate).
+model MonthlyInput {
+  id                 String   @id @default(cuid())
+  clientId           String
+  client             Client   @relation(fields: [clientId], references: [id])
+  periodKey          String   // "2026-10" (UTC) — one input per client per calendar month, see @@unique
+  goalText           String   // "What are you trying to achieve this month?"
+  targetAudienceText String   // "Who are you trying to reach?"
+  budgetNotes        String?  // optional — anything about budget/spend the client wants to flag
+  competitorNotes    String?  // optional — competitors, positioning notes
+  additionalNotes    String?
+  submittedAt        DateTime @default(now())
+
+  marketingPlans MarketingPlan[]
+
+  @@unique([clientId, periodKey])
+}
+
+// One AI-generated personas + ad copy + plan package, built from a
+// MonthlyInput plus real audience-demographic data (see
+// lib/personaBuilder.ts). Staff generates it as DRAFT, reviews it, sends it
+// to the client (PENDING_CLIENT_APPROVAL — triggers a portal notification
+// email), and the client approves or requests changes from /portal. personasJson/
+// adCopyJson/planJson are structured JSON (not modeled as separate tables —
+// same "insight payload" convention as ActionLog.payloadJson elsewhere in
+// this schema). planJson's proposedActions are what CLIENT_APPROVED turns
+// into real PENDING_APPROVAL ActionLog rows (actionType REWRITE_AD_COPY,
+// same execution path as everywhere else — see
+// /api/marketing-plans/[id]/client-approve) — the client approving a plan
+// is what unlocks staff being able to push it live, not a direct client ->
+// ad-platform write.
+model MarketingPlan {
+  id             String    @id @default(cuid())
+  clientId       String
+  client         Client    @relation(fields: [clientId], references: [id])
+  periodType     String    // "MONTHLY" | "QUARTERLY"
+  periodLabel    String    // "2026-10" for MONTHLY, "2026-Q4" for QUARTERLY
+  monthlyInputId String?
+  monthlyInput   MonthlyInput? @relation(fields: [monthlyInputId], references: [id])
+  status         String    @default("DRAFT") // DRAFT | PENDING_CLIENT_APPROVAL | CLIENT_APPROVED | CLIENT_REJECTED
+  personasJson   String    // AudiencePersona[] — see lib/personaBuilder.ts
+  adCopyJson     String    // PersonaAdCopy[] — see lib/personaBuilder.ts
+  planJson       String    // { objectives, narrative, proposedActions } — see lib/personaBuilder.ts
+  clientFeedback String?   // free text if status === CLIENT_REJECTED
+  createdByUserId String
+  createdBy      User      @relation(fields: [createdByUserId], references: [id])
+  createdAt      DateTime  @default(now())
+  sentToClientAt DateTime?
+  respondedAt    DateTime?
 }

@@ -11,6 +11,7 @@ import ImportCampaignsButton from './ImportCampaignsButton';
 import CampaignsList from './CampaignsList';
 import RecommendationsPanel from './RecommendationsPanel';
 import TargetingForm from './TargetingForm';
+import PortalContactForm from './PortalContactForm';
 import ReportingDashboard from './ReportingDashboard';
 import SummaryReportDashboard from './SummaryReportDashboard';
 import KeywordAdPerformanceCard from './KeywordAdPerformanceCard';
@@ -28,6 +29,7 @@ import MetaAdPerformanceCard from './MetaAdPerformanceCard';
 import MetaInsightsPanel from './MetaInsightsPanel';
 import CreativeTestsPanel from './CreativeTestsPanel';
 import IndustryTrendsPanel from './IndustryTrendsPanel';
+import PersonaPlanPanel from './PersonaPlanPanel';
 import ConnectSnapchatButton from './ConnectSnapchatButton';
 import SnapReportingDashboard from './SnapReportingDashboard';
 import AIInsightsPanel from './AIInsightsPanel';
@@ -283,6 +285,13 @@ export default async function ClientPage({
           clientId={client.id}
           initialAdLanguage={client.adLanguage}
           initialTargetLocations={client.targetLocations}
+          readOnly={!canTargeting}
+        />
+
+        <PortalContactForm
+          clientId={client.id}
+          initialName={client.portalContactName}
+          initialEmail={client.portalContactEmail}
           readOnly={!canTargeting}
         />
 
@@ -663,6 +672,7 @@ export default async function ClientPage({
             googleCampaigns={client.campaigns.map((c) => ({ id: c.id, name: c.name }))}
             metaCampaigns={metaAccount ? metaAccount.campaigns.map((c) => ({ id: c.id, name: c.name })) : []}
           />
+          <PersonaPlanPanel clientId={client.id} />
           {isAdmin && <IndustryTrendsPanel clientId={client.id} />}
         </>
       ),

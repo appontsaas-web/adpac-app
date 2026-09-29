@@ -36,6 +36,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.primaryGoal !== undefined) data.primaryGoal = body.primaryGoal || null;
   if (body.adLanguage !== undefined) data.adLanguage = body.adLanguage || null;
   if (body.targetLocations !== undefined) data.targetLocations = body.targetLocations || null;
+  if (body.portalContactName !== undefined) data.portalContactName = body.portalContactName || null;
+  if (body.portalContactEmail !== undefined) data.portalContactEmail = body.portalContactEmail || null;
   if (body.spendGuardrailEnabled !== undefined) data.spendGuardrailEnabled = !!body.spendGuardrailEnabled;
 
   try {
