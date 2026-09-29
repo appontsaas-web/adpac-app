@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, getClientAccess, canEdit } from '@/lib/access';
 import { db } from '@/lib/db';
 
-const AI_INSIGHT_TYPES = ['ADJUST_BUDGET', 'PAUSE_CAMPAIGN', 'REWRITE_AD_COPY', 'ANOMALY_ALERT', 'ADD_NEGATIVE_KEYWORDS', 'REALLOCATE_BUDGET', 'ADJUST_BID_MODIFIER'];
+const AI_INSIGHT_TYPES = ['ADJUST_BUDGET', 'PAUSE_CAMPAIGN', 'REWRITE_AD_COPY', 'ANOMALY_ALERT', 'ADD_NEGATIVE_KEYWORDS', 'REALLOCATE_BUDGET', 'ADJUST_BID_MODIFIER', 'FUNNEL_OPTIMIZATION'];
 
 // POST /api/ai-insights/[id]/dismiss
 // Rejects an AI insight without executing it — for a recommendation you

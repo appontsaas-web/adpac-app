@@ -205,6 +205,24 @@ async function runCycle() {
     console.error('[scheduler] Creative A/B test evaluation request failed:', err.message);
   }
 
+  // Funnel Analysis & Optimization — client-level (not per-campaign),
+  // reviews ad-click-to-GA4-conversion drop-off for every client with a
+  // connected GA4 property. See lib/funnelInsights.ts.
+  try {
+    const res = await fetch(`${url}/api/funnel-insights/generate`, {
+      method: 'POST',
+      headers: { 'x-sync-secret': secret },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      console.error(`[scheduler] Funnel review failed (${res.status}):`, data.error ?? data);
+    } else {
+      console.log(`[scheduler] Funnel review: ${data.created ?? 0} new insight(s) across ${data.reviewed ?? 0} client(s)`);
+    }
+  } catch (err: any) {
+    console.error('[scheduler] Funnel review request failed:', err.message);
+  }
+
   // Snapchat — same non-fatal, never-blocks-earlier-cycles treatment as
   // Meta above. No AI-review cycle yet (lib/snapInsights.ts not built —
   // see SnapCampaign.actionLogs/ActionLog.snapCampaignId reserved for it).

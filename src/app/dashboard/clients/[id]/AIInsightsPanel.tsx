@@ -37,7 +37,12 @@ const typeLabel: Record<string, string> = {
   ADD_NEGATIVE_KEYWORDS: 'Add negative keywords',
   REALLOCATE_BUDGET: 'Reallocate budget',
   ADJUST_BID_MODIFIER: 'Bid adjustment',
+  FUNNEL_OPTIMIZATION: 'Funnel optimization',
 };
+
+function pct(n: number | null) {
+  return n === null ? '—' : `${(n * 100).toFixed(1)}%`;
+}
 
 function money(cents: number) {
   return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -111,6 +116,7 @@ export default function AIInsightsPanel({
 }) {
   const router = useRouter();
   const [running, setRunning] = useState(false);
+  const [runningFunnel, setRunningFunnel] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [runMessage, setRunMessage] = useState<string | null>(null);
@@ -141,6 +147,34 @@ export default function AIInsightsPanel({
       setError(err.message ?? 'Failed to run AI review — network error');
     } finally {
       setRunning(false);
+    }
+  }
+
+  async function handleRunFunnel() {
+    setRunningFunnel(true);
+    setError(null);
+    setRunMessage(null);
+    try {
+      const res = await fetch('/api/funnel-insights/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(d.error ?? 'Failed to run funnel review');
+        return;
+      }
+      setRunMessage(
+        d.created > 0
+          ? 'Found a funnel finding worth a look.'
+          : 'No funnel finding — either nothing stood out, GA4 isn’t connected, or there isn’t enough click volume yet.'
+      );
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message ?? 'Failed to run funnel review — network error');
+    } finally {
+      setRunningFunnel(false);
     }
   }
 
@@ -185,9 +219,14 @@ export default function AIInsightsPanel({
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 10 }}>
         <h2 style={{ fontSize: '1.1rem' }}>AI performance review</h2>
-        <button className="btn btn-secondary" onClick={handleRun} disabled={running}>
-          {running ? 'Reviewing…' : 'Run AI review'}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-secondary" onClick={handleRun} disabled={running}>
+            {running ? 'Reviewing…' : 'Run AI review'}
+          </button>
+          <button className="btn btn-secondary" onClick={handleRunFunnel} disabled={runningFunnel}>
+            {runningFunnel ? 'Reviewing…' : 'Run funnel review'}
+          </button>
+        </div>
       </div>
       <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: 12 }}>
         Compares the last 7 days against the prior 14 for every live campaign, factors in budget pacing,
@@ -219,7 +258,11 @@ export default function AIInsightsPanel({
                       onClick={() => handleApprove(ins.id)}
                       disabled={processingId === ins.id}
                     >
-                      {processingId === ins.id ? 'Working…' : payload.type === 'ANOMALY_ALERT' ? 'Acknowledge' : 'Approve'}
+                      {processingId === ins.id
+                        ? 'Working…'
+                        : payload.type === 'ANOMALY_ALERT' || payload.type === 'FUNNEL_OPTIMIZATION'
+                        ? 'Acknowledge'
+                        : 'Approve'}
                     </button>
                     <button
                       className="btn btn-secondary"
@@ -332,6 +375,39 @@ export default function AIInsightsPanel({
                   <strong>{payload.bidModifierValue}</strong>: bid multiplier{' '}
                   <strong>{payload.proposedBidModifier === 0 ? 'opt out (0x)' : `${payload.proposedBidModifier}x`}</strong>
                 </p>
+              )}
+              {payload.type === 'FUNNEL_OPTIMIZATION' && payload.stageRates && (
+                <div style={{ background: 'var(--bg-alt)', border: '1px solid var(--card-border)', borderRadius: 8, padding: '10px 12px', marginBottom: 8, maxWidth: 380 }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                    Funnel — last 30 days
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4 }}>
+                    <span style={{ color: 'var(--text-dim)' }}>Clicks → Sessions</span>
+                    <span>
+                      {payload.stageRates.clicks.toLocaleString()} → {payload.stageRates.sessions.toLocaleString()} (
+                      {pct(payload.stageRates.clickToSessionRate)})
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4 }}>
+                    <span style={{ color: 'var(--text-dim)' }}>Sessions → Engaged</span>
+                    <span>
+                      {payload.stageRates.sessions.toLocaleString()} → {payload.stageRates.engagedSessions.toLocaleString()} (
+                      {pct(payload.stageRates.sessionToEngagedRate)})
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 8 }}>
+                    <span style={{ color: 'var(--text-dim)' }}>Engaged → Conversions</span>
+                    <span>
+                      {payload.stageRates.engagedSessions.toLocaleString()} → {payload.stageRates.conversions.toLocaleString()} (
+                      {pct(payload.stageRates.engagedToConversionRate)})
+                    </span>
+                  </div>
+                  {payload.recommendation && (
+                    <p style={{ fontSize: '0.8rem', margin: 0 }}>
+                      <strong style={{ color: 'var(--text)' }}>Recommendation:</strong> {payload.recommendation}
+                    </p>
+                  )}
+                </div>
               )}
               {payload.type === 'ADD_NEGATIVE_KEYWORDS' && payload.proposedNegativeKeywords?.length > 0 && (
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>

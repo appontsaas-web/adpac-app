@@ -20,6 +20,7 @@ const AI_INSIGHT_TYPES = [
   'ADD_NEGATIVE_KEYWORDS',
   'REALLOCATE_BUDGET',
   'ADJUST_BID_MODIFIER',
+  'FUNNEL_OPTIMIZATION',
 ];
 
 // POST /api/ai-insights/[id]/approve
@@ -47,16 +48,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: `Insight is already ${actionLog.status}` }, { status: 400 });
   }
 
-  const insight = JSON.parse(actionLog.payloadJson) as Insight;
+  const rawPayload = JSON.parse(actionLog.payloadJson) as { type: string };
 
-  // ANOMALY_ALERT is informational only — nothing to execute on Google Ads.
-  if (insight.type === 'ANOMALY_ALERT') {
+  // ANOMALY_ALERT and FUNNEL_OPTIMIZATION are informational only — nothing
+  // to execute on Google Ads (a funnel finding is landing-page/on-site work,
+  // not a campaign change AdPac can make on the client's behalf). Checked
+  // against the raw payload (not the stricter Insight type below) since
+  // FUNNEL_OPTIMIZATION comes from lib/funnelInsights.ts's own schema, not
+  // aiInsights.ts's InsightSchema.
+  if (rawPayload.type === 'ANOMALY_ALERT' || rawPayload.type === 'FUNNEL_OPTIMIZATION') {
     const updated = await db.actionLog.update({
       where: { id: actionLog.id },
       data: { status: 'EXECUTED', approvedByUserId: me.id, executedAt: new Date() },
     });
     return NextResponse.json({ actionLog: updated });
   }
+
+  const insight = rawPayload as Insight;
 
   if (!actionLog.campaignId) {
     return NextResponse.json({ error: 'This insight has no associated campaign' }, { status: 400 });

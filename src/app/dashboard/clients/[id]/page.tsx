@@ -27,6 +27,7 @@ import MetaReportingDashboard from './MetaReportingDashboard';
 import MetaAdPerformanceCard from './MetaAdPerformanceCard';
 import MetaInsightsPanel from './MetaInsightsPanel';
 import CreativeTestsPanel from './CreativeTestsPanel';
+import IndustryTrendsPanel from './IndustryTrendsPanel';
 import ConnectSnapchatButton from './ConnectSnapchatButton';
 import SnapReportingDashboard from './SnapReportingDashboard';
 import AIInsightsPanel from './AIInsightsPanel';
@@ -40,7 +41,7 @@ import RealAIImpactCard from './RealAIImpactCard';
 import { computeOutcomes } from '@/lib/aiInsights';
 import { getRealImpactVisibleToStaff } from '@/lib/appSettings';
 
-const AI_INSIGHT_TYPES = ['ADJUST_BUDGET', 'PAUSE_CAMPAIGN', 'REWRITE_AD_COPY', 'ANOMALY_ALERT', 'ADD_NEGATIVE_KEYWORDS', 'REALLOCATE_BUDGET', 'ADJUST_BID_MODIFIER'];
+const AI_INSIGHT_TYPES = ['ADJUST_BUDGET', 'PAUSE_CAMPAIGN', 'REWRITE_AD_COPY', 'ANOMALY_ALERT', 'ADD_NEGATIVE_KEYWORDS', 'REALLOCATE_BUDGET', 'ADJUST_BID_MODIFIER', 'FUNNEL_OPTIMIZATION'];
 
 export default async function ClientPage({
   params,
@@ -662,6 +663,7 @@ export default async function ClientPage({
             googleCampaigns={client.campaigns.map((c) => ({ id: c.id, name: c.name }))}
             metaCampaigns={metaAccount ? metaAccount.campaigns.map((c) => ({ id: c.id, name: c.name })) : []}
           />
+          {isAdmin && <IndustryTrendsPanel clientId={client.id} />}
         </>
       ),
     });
