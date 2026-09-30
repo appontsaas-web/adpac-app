@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { absoluteUrl } from '@/lib/baseUrl';
 import { exchangeCodeForTokens, listOrgAdAccounts } from '@/lib/snapchat';
 import { encryptToken } from '@/lib/crypto';
 import { db } from '@/lib/db';
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (error) {
-    return NextResponse.redirect(new URL(`/dashboard/clients/${clientId}?snapchat=denied&tab=snapchat`, req.url));
+    return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?snapchat=denied&tab=snapchat`));
   }
   if (!code || !clientId) {
     return NextResponse.json({ error: 'Missing code or state (clientId)' }, { status: 400 });
@@ -56,10 +57,10 @@ export async function GET(req: NextRequest) {
           status: 'connected',
         },
       });
-      return NextResponse.redirect(new URL(`/dashboard/clients/${clientId}?snapchat=connected&tab=snapchat`, req.url));
+      return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?snapchat=connected&tab=snapchat`));
     }
 
-    const res = NextResponse.redirect(new URL(`/dashboard/clients/${clientId}?snapchat=choose&tab=snapchat`, req.url));
+    const res = NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?snapchat=choose&tab=snapchat`));
     res.cookies.set(
       PENDING_SNAPCHAT_CONNECT_COOKIE,
       JSON.stringify({
@@ -80,7 +81,7 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     console.error('Snapchat OAuth callback failed:', err.message);
     return NextResponse.redirect(
-      new URL(`/dashboard/clients/${clientId}?snapchat=error&tab=snapchat&message=${encodeURIComponent(err.message)}`, req.url)
+      absoluteUrl(`/dashboard/clients/${clientId}?snapchat=error&tab=snapchat&message=${encodeURIComponent(err.message)}`)
     );
   }
 }

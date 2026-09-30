@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { absoluteUrl } from '@/lib/baseUrl';
 import { exchangeCodeForTokens, fetchAccountCurrency } from '@/lib/googleAds';
 import { encryptToken } from '@/lib/crypto';
 import { db } from '@/lib/db';
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (error) {
-    return NextResponse.redirect(new URL(`/dashboard/clients/${clientId}?googleAds=denied`, req.url));
+    return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?googleAds=denied`));
   }
   if (!code || !clientId || !googleCustomerId) {
     return NextResponse.json({ error: 'Missing code or state (clientId/customerId)' }, { status: 400 });
@@ -73,11 +74,11 @@ export async function GET(req: NextRequest) {
       data: { googleAdsAccountId: account.id },
     });
 
-    return NextResponse.redirect(new URL(`/dashboard/clients/${clientId}?googleAds=connected`, req.url));
+    return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?googleAds=connected`));
   } catch (err: any) {
     console.error('Google Ads OAuth callback failed:', err.message);
     return NextResponse.redirect(
-      new URL(`/dashboard/clients/${clientId}?googleAds=error&message=${encodeURIComponent(err.message)}`, req.url)
+      absoluteUrl(`/dashboard/clients/${clientId}?googleAds=error&message=${encodeURIComponent(err.message)}`)
     );
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { absoluteUrl } from '@/lib/baseUrl';
 import { exchangeCodeForTokens, verifyContainerAccess } from '@/lib/googleTagManager';
 import { encryptToken } from '@/lib/crypto';
 import { db } from '@/lib/db';
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (error) {
-    return NextResponse.redirect(new URL(`/dashboard/clients/${clientId}?gtm=denied`, req.url));
+    return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?gtm=denied`));
   }
   if (!code || !clientId || !accountId || !containerId) {
     return NextResponse.json({ error: 'Missing code or state (clientId/accountId/containerId)' }, { status: 400 });
@@ -51,11 +52,11 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.redirect(new URL(`/dashboard/clients/${clientId}?gtm=connected`, req.url));
+    return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?gtm=connected`));
   } catch (err: any) {
     console.error('Google Tag Manager OAuth callback failed:', err.message);
     return NextResponse.redirect(
-      new URL(`/dashboard/clients/${clientId}?gtm=error&message=${encodeURIComponent(err.message)}`, req.url)
+      absoluteUrl(`/dashboard/clients/${clientId}?gtm=error&message=${encodeURIComponent(err.message)}`)
     );
   }
 }

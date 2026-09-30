@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { absoluteUrl } from '@/lib/baseUrl';
 import { getCurrentUser, canViewReporting } from '@/lib/access';
 import { db } from '@/lib/db';
 
@@ -20,5 +21,5 @@ export async function POST(req: NextRequest) {
 
   await db.googleAnalyticsProperty.deleteMany({ where: { clientId } });
 
-  return NextResponse.redirect(new URL(`/dashboard/clients/${clientId}`, req.url), { status: 303 });
+  return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}`), { status: 303 });
 }

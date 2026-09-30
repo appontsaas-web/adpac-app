@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { absoluteUrl } from '@/lib/baseUrl';
 import { getCurrentUser, hasCapability } from '@/lib/access';
 import { db } from '@/lib/db';
 import { PENDING_SNAPCHAT_CONNECT_COOKIE, PendingSnapchatConnect } from '../../callback/pendingConnectCookie';
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
   const cookieVal = req.cookies.get(PENDING_SNAPCHAT_CONNECT_COOKIE)?.value;
   if (!cookieVal) {
     return NextResponse.redirect(
-      new URL(`/dashboard/clients/${clientId}?snapchat=error&tab=snapchat&message=${encodeURIComponent('Your selection expired — please reconnect.')}`, req.url),
+      absoluteUrl(`/dashboard/clients/${clientId}?snapchat=error&tab=snapchat&message=${encodeURIComponent('Your selection expired — please reconnect.')}`),
       { status: 303 }
     );
   }
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     pending = JSON.parse(cookieVal);
   } catch {
     return NextResponse.redirect(
-      new URL(`/dashboard/clients/${clientId}?snapchat=error&tab=snapchat&message=${encodeURIComponent('Something went wrong — please reconnect.')}`, req.url),
+      absoluteUrl(`/dashboard/clients/${clientId}?snapchat=error&tab=snapchat&message=${encodeURIComponent('Something went wrong — please reconnect.')}`),
       { status: 303 }
     );
   }
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  const res = NextResponse.redirect(new URL(`/dashboard/clients/${clientId}?snapchat=connected&tab=snapchat`, req.url), { status: 303 });
+  const res = NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?snapchat=connected&tab=snapchat`), { status: 303 });
   res.cookies.delete(PENDING_SNAPCHAT_CONNECT_COOKIE);
   return res;
 }

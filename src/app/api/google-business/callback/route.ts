@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { absoluteUrl } from '@/lib/baseUrl';
 import { exchangeCodeForTokens, listAccounts } from '@/lib/googleBusinessProfile';
 import { encryptToken } from '@/lib/crypto';
 import { db } from '@/lib/db';
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (error) {
-    return NextResponse.redirect(new URL(`/dashboard/clients/${clientId}?gbp=denied`, req.url));
+    return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?gbp=denied`));
   }
   if (!code || !clientId) {
     return NextResponse.json({ error: 'Missing code or state (clientId)' }, { status: 400 });
@@ -55,11 +56,11 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.redirect(new URL(`/dashboard/clients/${clientId}?gbp=connected`, req.url));
+    return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?gbp=connected`));
   } catch (err: any) {
     console.error('Google Business Profile OAuth callback failed:', err.message);
     return NextResponse.redirect(
-      new URL(`/dashboard/clients/${clientId}?gbp=error&message=${encodeURIComponent(err.message)}`, req.url)
+      absoluteUrl(`/dashboard/clients/${clientId}?gbp=error&message=${encodeURIComponent(err.message)}`)
     );
   }
 }

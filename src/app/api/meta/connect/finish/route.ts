@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { absoluteUrl } from '@/lib/baseUrl';
 import { getCurrentUser, hasCapability } from '@/lib/access';
 import { db } from '@/lib/db';
 import { PENDING_META_CONNECT_COOKIE, PendingMetaConnect } from '../../callback/pendingConnectCookie';
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
   const raw = req.cookies.get(PENDING_META_CONNECT_COOKIE)?.value;
   if (!raw) {
     return NextResponse.redirect(
-      new URL(`/dashboard/clients/${clientId}?meta=error&tab=meta&message=${encodeURIComponent('Your ad account selection expired — reconnect to try again.')}`, req.url)
+      absoluteUrl(`/dashboard/clients/${clientId}?meta=error&tab=meta&message=${encodeURIComponent('Your ad account selection expired — reconnect to try again.')}`)
     );
   }
 
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
     pending = JSON.parse(raw);
   } catch {
     const res = NextResponse.redirect(
-      new URL(`/dashboard/clients/${clientId}?meta=error&tab=meta&message=${encodeURIComponent('Your ad account selection was invalid — reconnect to try again.')}`, req.url)
+      absoluteUrl(`/dashboard/clients/${clientId}?meta=error&tab=meta&message=${encodeURIComponent('Your ad account selection was invalid — reconnect to try again.')}`)
     );
     res.cookies.delete(PENDING_META_CONNECT_COOKIE);
     return res;
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
 
   if (pending.clientId !== clientId) {
     const res = NextResponse.redirect(
-      new URL(`/dashboard/clients/${clientId}?meta=error&tab=meta&message=${encodeURIComponent('That selection was for a different client — reconnect to try again.')}`, req.url)
+      absoluteUrl(`/dashboard/clients/${clientId}?meta=error&tab=meta&message=${encodeURIComponent('That selection was for a different client — reconnect to try again.')}`)
     );
     res.cookies.delete(PENDING_META_CONNECT_COOKIE);
     return res;
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  const res = NextResponse.redirect(new URL(`/dashboard/clients/${clientId}?meta=connected&tab=meta`, req.url), { status: 303 });
+  const res = NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?meta=connected&tab=meta`), { status: 303 });
   res.cookies.delete(PENDING_META_CONNECT_COOKIE);
   return res;
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { absoluteUrl } from '@/lib/baseUrl';
 import { exchangeCodeForTokens, verifyPropertyAccess } from '@/lib/googleAnalytics';
 import { encryptToken } from '@/lib/crypto';
 import { db } from '@/lib/db';
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (error) {
-    return NextResponse.redirect(new URL(`/dashboard/clients/${clientId}?ga4=denied`, req.url));
+    return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?ga4=denied`));
   }
   if (!code || !clientId || !propertyId) {
     return NextResponse.json({ error: 'Missing code or state (clientId/propertyId)' }, { status: 400 });
@@ -46,11 +47,11 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.redirect(new URL(`/dashboard/clients/${clientId}?ga4=connected`, req.url));
+    return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?ga4=connected`));
   } catch (err: any) {
     console.error('Google Analytics OAuth callback failed:', err.message);
     return NextResponse.redirect(
-      new URL(`/dashboard/clients/${clientId}?ga4=error&message=${encodeURIComponent(err.message)}`, req.url)
+      absoluteUrl(`/dashboard/clients/${clientId}?ga4=error&message=${encodeURIComponent(err.message)}`)
     );
   }
 }

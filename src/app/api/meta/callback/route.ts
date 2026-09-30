@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { absoluteUrl } from '@/lib/baseUrl';
 import { exchangeCodeForToken, listAdAccounts } from '@/lib/meta';
 import { encryptToken } from '@/lib/crypto';
 import { db } from '@/lib/db';
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (error) {
-    return NextResponse.redirect(new URL(`/dashboard/clients/${clientId}?meta=denied&tab=meta`, req.url));
+    return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?meta=denied&tab=meta`));
   }
   if (!code || !clientId) {
     return NextResponse.json({ error: 'Missing code or state (clientId)' }, { status: 400 });
@@ -66,13 +67,13 @@ export async function GET(req: NextRequest) {
           status: 'connected',
         },
       });
-      return NextResponse.redirect(new URL(`/dashboard/clients/${clientId}?meta=connected&tab=meta`, req.url));
+      return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?meta=connected&tab=meta`));
     }
 
     // Multiple ad accounts — stash everything needed to finish connecting
     // (already-encrypted token, so the cookie never holds it in plaintext)
     // and send the operator to the picker instead of guessing.
-    const res = NextResponse.redirect(new URL(`/dashboard/clients/${clientId}?meta=choose&tab=meta`, req.url));
+    const res = NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?meta=choose&tab=meta`));
     res.cookies.set(PENDING_META_CONNECT_COOKIE, JSON.stringify({
       clientId,
       accessTokenEncrypted: encryptToken(accessToken),
@@ -88,7 +89,7 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     console.error('Meta OAuth callback failed:', err.message);
     return NextResponse.redirect(
-      new URL(`/dashboard/clients/${clientId}?meta=error&tab=meta&message=${encodeURIComponent(err.message)}`, req.url)
+      absoluteUrl(`/dashboard/clients/${clientId}?meta=error&tab=meta&message=${encodeURIComponent(err.message)}`)
     );
   }
 }

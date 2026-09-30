@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { absoluteUrl } from '@/lib/baseUrl';
 import { getCurrentUser, hasCapability } from '@/lib/access';
 import { db } from '@/lib/db';
 
@@ -34,5 +35,5 @@ export async function POST(req: NextRequest) {
   }
   await db.snapAdAccount.deleteMany({ where: { clientId } });
 
-  return NextResponse.redirect(new URL(`/dashboard/clients/${clientId}?tab=snapchat`, req.url), { status: 303 });
+  return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?tab=snapchat`), { status: 303 });
 }
