@@ -274,17 +274,22 @@ export interface SnapDailyInsightRow {
   conversionValueCents: number;
 }
 
-/** Pulls per-day performance for one campaign via the Stats API (granularity=DAY). */
-export async function fetchCampaignInsights(
+// Snap's DAY-granularity Stats API rejects any single query spanning more
+// than 32 days (error E1008: "Timeseries queries with DAY granularity
+// cannot query time intervals of more than 32 days") — confirmed against a
+// live 400 response, not just the docs. 30 is used as the chunk size (not
+// 32) to leave headroom for the half-open end_time below, which already
+// pushes each request's actual queried interval one day past `untilDate`.
+const MAX_STATS_QUERY_DAYS = 30;
+
+/** One Stats API call, no chunking — the date range must already be ≤32 days. */
+async function fetchCampaignInsightsChunk(
   campaignId: string,
-  refreshToken: string,
+  accessToken: string,
   sinceDate: string, // YYYY-MM-DD
   untilDate: string, // inclusive
-  currencyCode?: string | null
+  fx: number
 ): Promise<SnapDailyInsightRow[]> {
-  const accessToken = await getAccessToken(refreshToken);
-  const fx = fxRateToUsd(currencyCode);
-
   // DAY granularity's end_time is exclusive of the final day, so this asks
   // for one day past `untilDate` to include it in full — same half-open
   // interval convention used elsewhere (e.g. Google Ads BETWEEN queries are
@@ -309,7 +314,7 @@ export async function fetchCampaignInsights(
     // silently swallowed) so a REAL Stats API error — bad param, revoked
     // scope, etc. — is still visible in production logs instead of just
     // looking like "no data" with no trace of why.
-    console.error(`snapchat: stats fetch failed for campaign ${campaignId}:`, err.message);
+    console.error(`snapchat: stats fetch failed for campaign ${campaignId} (${sinceDate}..${untilDate}):`, err.message);
     return [];
   }
 
@@ -330,6 +335,49 @@ export async function fetchCampaignInsights(
       });
     }
   }
+  return rows;
+}
+
+/**
+ * Pulls per-day performance for one campaign via the Stats API
+ * (granularity=DAY), transparently chunking the requested range into
+ * ≤30-day windows — Snap's Stats API hard-rejects anything over 32 days in
+ * one call (see MAX_STATS_QUERY_DAYS above), which was silently turning
+ * every sync into "0 rows" before this chunking was added (the 30-day
+ * default sync window and 365-day "Backfill 12 months" were both affected).
+ */
+export async function fetchCampaignInsights(
+  campaignId: string,
+  refreshToken: string,
+  sinceDate: string, // YYYY-MM-DD
+  untilDate: string, // inclusive
+  currencyCode?: string | null
+): Promise<SnapDailyInsightRow[]> {
+  const accessToken = await getAccessToken(refreshToken);
+  const fx = fxRateToUsd(currencyCode);
+
+  const rows: SnapDailyInsightRow[] = [];
+  let chunkStart = new Date(sinceDate);
+  const finalEnd = new Date(untilDate);
+
+  while (chunkStart <= finalEnd) {
+    const chunkEnd = new Date(chunkStart);
+    chunkEnd.setDate(chunkEnd.getDate() + MAX_STATS_QUERY_DAYS - 1);
+    if (chunkEnd > finalEnd) chunkEnd.setTime(finalEnd.getTime());
+
+    const chunkRows = await fetchCampaignInsightsChunk(
+      campaignId,
+      accessToken,
+      chunkStart.toISOString().slice(0, 10),
+      chunkEnd.toISOString().slice(0, 10),
+      fx
+    );
+    rows.push(...chunkRows);
+
+    chunkStart = new Date(chunkEnd);
+    chunkStart.setDate(chunkStart.getDate() + 1);
+  }
+
   return rows;
 }
 
