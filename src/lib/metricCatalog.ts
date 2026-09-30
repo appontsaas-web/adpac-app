@@ -20,7 +20,7 @@ export interface MetricCatalogEntry {
   label: string;
 }
 
-export const METRIC_PLATFORMS = ['google', 'meta', 'snapchat'] as const;
+export const METRIC_PLATFORMS = ['google', 'meta', 'snapchat', 'tiktok'] as const;
 export type MetricPlatform = (typeof METRIC_PLATFORMS)[number];
 
 export const METRIC_CATALOG: Record<MetricPlatform, MetricCatalogEntry[]> = {
@@ -61,6 +61,17 @@ export const METRIC_CATALOG: Record<MetricPlatform, MetricCatalogEntry[]> = {
   snapchat: [
     { key: 'spend', label: 'Spend' },
     { key: 'clicks', label: 'Clicks (swipes)' },
+    { key: 'impressions', label: 'Impressions' },
+    { key: 'ctr', label: 'CTR' },
+    { key: 'avgCpc', label: 'Avg. CPC' },
+    { key: 'conversions', label: 'Conversions' },
+    { key: 'costPerConversion', label: 'Cost / conversion' },
+    { key: 'conversionValue', label: 'Conversion value' },
+    { key: 'roas', label: 'ROAS' },
+  ],
+  tiktok: [
+    { key: 'spend', label: 'Spend' },
+    { key: 'clicks', label: 'Clicks' },
     { key: 'impressions', label: 'Impressions' },
     { key: 'ctr', label: 'CTR' },
     { key: 'avgCpc', label: 'Avg. CPC' },

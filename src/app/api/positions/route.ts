@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
       canManageBusinessProfile: !!body.canManageBusinessProfile,
       canManageMeta: !!body.canManageMeta,
       canManageSnapchat: !!body.canManageSnapchat,
+      canManageTikTok: !!body.canManageTikTok,
     },
   });
   return NextResponse.json({ position });

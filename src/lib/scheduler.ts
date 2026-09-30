@@ -243,6 +243,28 @@ async function runCycle() {
   } catch (err: any) {
     console.error('[scheduler] Snapchat sync request failed:', err.message);
   }
+
+  // TikTok — same non-fatal, never-blocks-earlier-cycles treatment as
+  // Snapchat above. No AI-review cycle yet (lib/tiktokInsights.ts not
+  // built — see TikTokCampaign.actionLogs/ActionLog.tiktokCampaignId
+  // reserved for it).
+  try {
+    const res = await fetch(`${url}/api/tiktok/sync`, {
+      method: 'POST',
+      headers: { 'x-sync-secret': secret },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      console.error(`[scheduler] TikTok sync failed (${res.status}):`, data.error ?? data);
+    } else {
+      console.log(
+        `[scheduler] TikTok sync: ${data.campaignsSynced ?? 0} campaign(s), ${data.metricsSynced ?? 0} metric row(s)` +
+          (data.errors?.length ? ` — ${data.errors.length} non-fatal error(s)` : '')
+      );
+    }
+  } catch (err: any) {
+    console.error('[scheduler] TikTok sync request failed:', err.message);
+  }
 }
 
 export function startScheduler() {

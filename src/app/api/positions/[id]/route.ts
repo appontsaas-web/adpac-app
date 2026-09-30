@@ -33,6 +33,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.canManageBusinessProfile !== undefined) data.canManageBusinessProfile = !!body.canManageBusinessProfile;
   if (body.canManageMeta !== undefined) data.canManageMeta = !!body.canManageMeta;
   if (body.canManageSnapchat !== undefined) data.canManageSnapchat = !!body.canManageSnapchat;
+  if (body.canManageTikTok !== undefined) data.canManageTikTok = !!body.canManageTikTok;
 
   const updated = await db.position.update({ where: { id: params.id }, data });
   return NextResponse.json({ position: updated });

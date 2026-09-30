@@ -305,7 +305,11 @@ export async function fetchCampaignInsights(
   } catch (err: any) {
     // A campaign with zero stats history (brand new, or never actually
     // served) can 404/error rather than return an empty series — treat
-    // that as "no rows" instead of failing the whole sync.
+    // that as "no rows" instead of failing the whole sync. Logged (not
+    // silently swallowed) so a REAL Stats API error — bad param, revoked
+    // scope, etc. — is still visible in production logs instead of just
+    // looking like "no data" with no trace of why.
+    console.error(`snapchat: stats fetch failed for campaign ${campaignId}:`, err.message);
     return [];
   }
 

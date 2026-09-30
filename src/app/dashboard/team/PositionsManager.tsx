@@ -8,6 +8,7 @@ const PLATFORM_LABELS: Record<MetricPlatform, string> = {
   google: 'Google Ads',
   meta: 'Meta Ads',
   snapchat: 'Snapchat Ads',
+  tiktok: 'TikTok Ads',
 };
 
 export interface Position {
@@ -22,6 +23,7 @@ export interface Position {
   canManageBusinessProfile: boolean;
   canManageMeta: boolean;
   canManageSnapchat: boolean;
+  canManageTikTok: boolean;
 }
 
 const emptyForm = {
@@ -35,6 +37,7 @@ const emptyForm = {
   canManageBusinessProfile: false,
   canManageMeta: false,
   canManageSnapchat: false,
+  canManageTikTok: false,
 };
 
 // Admin-only. Positions are reusable capability bundles — assign one to a
@@ -94,6 +97,7 @@ export default function PositionsManager({ positions }: { positions: Position[] 
       canManageBusinessProfile: p.canManageBusinessProfile,
       canManageMeta: p.canManageMeta,
       canManageSnapchat: p.canManageSnapchat,
+      canManageTikTok: p.canManageTikTok,
     });
     setError(null);
   }
@@ -238,6 +242,15 @@ export default function PositionsManager({ positions }: { positions: Position[] 
             />
             Manage Snapchat Ads (connect Snapchat ad account, manage campaigns)
           </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 12 }}>
+            <input
+              type="checkbox"
+              checked={form.canManageTikTok}
+              onChange={(e) => setForm({ ...form, canManageTikTok: e.target.checked })}
+              style={{ width: 'auto', margin: 0 }}
+            />
+            Manage TikTok Ads (connect TikTok ad account, manage campaigns)
+          </label>
           <button className="btn" type="submit" disabled={saving}>
             {saving ? 'Creating…' : 'Create position'}
           </button>
@@ -262,6 +275,7 @@ export default function PositionsManager({ positions }: { positions: Position[] 
               <th style={{ padding: '8px 6px' }}>Business Profile</th>
               <th style={{ padding: '8px 6px' }}>Meta Ads</th>
               <th style={{ padding: '8px 6px' }}>Snapchat Ads</th>
+              <th style={{ padding: '8px 6px' }}>TikTok Ads</th>
               <th style={{ padding: '8px 6px' }}></th>
             </tr>
           </thead>
@@ -344,6 +358,14 @@ export default function PositionsManager({ positions }: { positions: Position[] 
                       style={{ width: 'auto' }}
                     />
                   </td>
+                  <td style={{ padding: '8px 6px' }}>
+                    <input
+                      type="checkbox"
+                      checked={editForm.canManageTikTok}
+                      onChange={(e) => setEditForm({ ...editForm, canManageTikTok: e.target.checked })}
+                      style={{ width: 'auto' }}
+                    />
+                  </td>
                   <td style={{ padding: '8px 6px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button className="btn" style={{ fontSize: '0.75rem', padding: '5px 10px', marginRight: 6 }} onClick={() => handleSaveEdit(p.id)} disabled={saving}>
                       Save
@@ -365,6 +387,7 @@ export default function PositionsManager({ positions }: { positions: Position[] 
                   <td style={{ padding: '8px 6px' }}>{p.canManageBusinessProfile ? '✓' : '—'}</td>
                   <td style={{ padding: '8px 6px' }}>{p.canManageMeta ? '✓' : '—'}</td>
                   <td style={{ padding: '8px 6px' }}>{p.canManageSnapchat ? '✓' : '—'}</td>
+                  <td style={{ padding: '8px 6px' }}>{p.canManageTikTok ? '✓' : '—'}</td>
                   <td style={{ padding: '8px 6px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button
                       className="btn btn-secondary"

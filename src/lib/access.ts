@@ -16,6 +16,7 @@ export interface PositionCapabilities {
   canManageBusinessProfile: boolean;
   canManageMeta: boolean;
   canManageSnapchat: boolean;
+  canManageTikTok: boolean;
 }
 
 export interface CurrentUser {
@@ -55,6 +56,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
           canManageBusinessProfile: user.position.canManageBusinessProfile,
           canManageMeta: user.position.canManageMeta,
           canManageSnapchat: user.position.canManageSnapchat,
+          canManageTikTok: user.position.canManageTikTok,
         }
       : null,
   };
@@ -79,7 +81,7 @@ export function canView(level: AccessLevel): boolean {
   return level === 'ADMIN' || level === 'EDIT' || level === 'VIEW';
 }
 
-export type Capability = 'campaigns' | 'googleAds' | 'targeting' | 'tagManager' | 'businessProfile' | 'meta' | 'snapchat';
+export type Capability = 'campaigns' | 'googleAds' | 'targeting' | 'tagManager' | 'businessProfile' | 'meta' | 'snapchat' | 'tiktok';
 
 // Combines client-level access (VIEW/EDIT/ADMIN) with the user's Position to
 // answer "can this person actually do X on this client". ADMIN always true.
@@ -106,6 +108,8 @@ export async function hasCapability(user: CurrentUser, clientId: string, capabil
       return user.position.canManageMeta;
     case 'snapchat':
       return user.position.canManageSnapchat;
+    case 'tiktok':
+      return user.position.canManageTikTok;
     default:
       return false;
   }

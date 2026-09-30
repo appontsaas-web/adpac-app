@@ -73,6 +73,7 @@ model Position {
   canManageBusinessProfile Boolean @default(false) // connect a client's Google Business Profile, and approve AI-drafted review replies (which WRITE to the client's live, public review responses). Requires EDIT client access like campaigns/googleAds/targeting/tagManager.
   canManageMeta      Boolean  @default(false) // connect a client's Meta (Facebook + Instagram share one ad account) ad account, and approve AI-proposed budget/pause changes to Meta campaigns. Requires EDIT client access like campaigns/googleAds/targeting/tagManager/businessProfile.
   canManageSnapchat  Boolean  @default(false) // connect a client's Snapchat ad account and manage its campaigns. Requires EDIT client access like campaigns/googleAds/targeting/tagManager/businessProfile/meta.
+  canManageTikTok    Boolean  @default(false) // connect a client's TikTok ad account (via TikTok Business Center) and manage its campaigns. Requires EDIT client access like campaigns/googleAds/targeting/tagManager/businessProfile/meta/snapchat.
   createdAt          DateTime @default(now())
 
   users User[]
@@ -121,6 +122,7 @@ model Client {
   businessProfileAccounts GoogleBusinessProfileAccount[]
   metaAdAccounts    MetaAdAccount[]
   snapAdAccounts    SnapAdAccount[]
+  tiktokAdAccounts  TikTokAdAccount[]
   campaigns         Campaign[]
   actionLogs        ActionLog[]
   invoices          Invoice[]
@@ -572,6 +574,73 @@ model SnapDailyMetric {
   @@unique([campaignId, date])
 }
 
+// A connected TikTok ad account for a client — OAuth via TikTok Business
+// Center. Same "conventional OAuth 2.0 with a real refresh_token" shape as
+// Snapchat: the access token lasts 24 hours and the refresh_token lasts
+// ~1 year (renews itself on use, per TikTok's docs), so lib/tiktok.ts just
+// requests a fresh access token with it whenever needed, no re-exchange
+// dance. advertiserId is stored because one TikTok Business Center login
+// can have access to several advertiser accounts (TikTok's flat-ish
+// equivalent of Snapchat's Organization -> Ad Account, though TikTok has no
+// intermediate Organization level to also store).
+model TikTokAdAccount {
+  id                    String   @id @default(cuid())
+  clientId              String
+  client                Client   @relation(fields: [clientId], references: [id])
+  advertiserId          String   // TikTok's Advertiser ID
+  refreshTokenEncrypted String   // encrypted with lib/crypto.ts before storage — never store plaintext
+  connectedAt           DateTime @default(now())
+  status                String   @default("connected") // connected | revoked | error
+  // The account's real billing currency (TikTok's own `currency` field on
+  // the advertiser, e.g. USD/EUR/GBP) — same FX-conversion need as
+  // GoogleAdsAccount.currencyCode/MetaAdAccount.currencyCode/SnapAdAccount.currencyCode.
+  currencyCode          String?
+  timezone              String?  // TikTok's own advertiser timezone — stats are bucketed in this timezone, not UTC
+
+  campaigns TikTokCampaign[]
+}
+
+// A TikTok ad campaign, imported from an already-existing campaign on the
+// connected advertiser account — same "import existing" model as
+// MetaCampaign/SnapCampaign.
+model TikTokCampaign {
+  id                  String   @id @default(cuid())
+  adAccountId         String
+  adAccount           TikTokAdAccount @relation(fields: [adAccountId], references: [id])
+  tiktokCampaignId    String   // TikTok's campaign_id
+  name                String
+  objective           String   // TikTok's objective_type enum, e.g. "TRAFFIC", "CONVERSIONS", "APP_PROMOTION" — see lib/tiktok.ts
+  status              String   // ACTIVE | PAUSED — normalized from TikTok's operation_status (ENABLE/DISABLE), same "own campaign status synced as-is" approach as Snap
+  dailyBudgetCents    Int?     // converted from TikTok's budget (campaign-level, BUDGET_MODE_DAY) — null if the campaign uses ad-group-level budgets instead
+  lifetimeBudgetCents Int?     // converted from TikTok's budget when budget_mode is BUDGET_MODE_TOTAL
+  hiddenFromList      Boolean  @default(false) // same local-only display preference as Campaign.hiddenFromList / MetaCampaign.hiddenFromList / SnapCampaign.hiddenFromList
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  dailyMetrics TikTokDailyMetric[]
+  actionLogs   ActionLog[]
+
+  @@unique([adAccountId, tiktokCampaignId])
+}
+
+// Daily performance snapshot for one TikTok campaign, from the Business
+// API's Reporting endpoint (GET /report/integrated/get/, data_level
+// AUCTION_CAMPAIGN, dimensions [campaign_id, stat_time_day]) — same
+// one-row-per-campaign-per-day shape as DailyMetric/MetaDailyMetric/SnapDailyMetric.
+model TikTokDailyMetric {
+  id                   String   @id @default(cuid())
+  campaignId           String
+  campaign             TikTokCampaign @relation(fields: [campaignId], references: [id])
+  date                 DateTime
+  impressions          Int      @default(0)
+  clicks               Int      @default(0)
+  costCents            Int      @default(0) // TikTok's "spend", converted to USD cents same as Google Ads'/Meta's/Snap's costCents
+  conversions          Float    @default(0) // TikTok's "conversion" metric (count of the campaign's optimized conversion event)
+  conversionValueCents Int      @default(0) // TikTok's "total_complete_payment_rate"-adjacent value field — see lib/tiktok.ts for which one
+
+  @@unique([campaignId, date])
+}
+
 // A campaign — may exist only as an AI-generated draft, or be pushed live to Google Ads
 model Campaign {
   id                  String    @id @default(cuid())
@@ -846,6 +915,12 @@ model ActionLog {
   // Meta-campaign-shaped, or Snap-campaign-shaped, never more than one.
   snapCampaignId   String?
   snapCampaign     SnapCampaign? @relation(fields: [snapCampaignId], references: [id])
+  // TikTok counterpart to campaignId/metaCampaignId/snapCampaignId — nullable,
+  // reserved for a future TikTok AI-insights pass (lib/tiktokInsights.ts, not
+  // yet built), same "reserved, not yet used" status as snapCampaignId when
+  // that was first added.
+  tiktokCampaignId String?
+  tiktokCampaign   TikTokCampaign? @relation(fields: [tiktokCampaignId], references: [id])
   // CreativeTest counterpart to campaignId/metaCampaignId/etc — only set for
   // the AB_TEST_WINNER insight type (see lib/creativeTests.ts). Still also
   // sets campaignId OR metaCampaignId (whichever platform the test is on) so

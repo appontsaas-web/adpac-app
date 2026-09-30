@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { PENDING_META_CONNECT_COOKIE, PendingMetaConnect } from '@/app/api/meta/callback/pendingConnectCookie';
 import { PENDING_SNAPCHAT_CONNECT_COOKIE, PendingSnapchatConnect } from '@/app/api/snapchat/callback/pendingConnectCookie';
+import { PENDING_TIKTOK_CONNECT_COOKIE, PendingTikTokConnect } from '@/app/api/tiktok/callback/pendingConnectCookie';
 import { getCurrentUser, getClientAccess, hasCapability, canViewFinance, canViewReporting as canViewReportingFn, canEdit } from '@/lib/access';
 import DashboardNav from '../../DashboardNav';
 import ConnectGoogleAdsButton from './ConnectGoogleAdsButton';
@@ -32,6 +33,8 @@ import IndustryTrendsPanel from './IndustryTrendsPanel';
 import PersonaPlanPanel from './PersonaPlanPanel';
 import ConnectSnapchatButton from './ConnectSnapchatButton';
 import SnapReportingDashboard from './SnapReportingDashboard';
+import ConnectTikTokButton from './ConnectTikTokButton';
+import TikTokReportingDashboard from './TikTokReportingDashboard';
 import AIInsightsPanel from './AIInsightsPanel';
 import AIImpactCard from './AIImpactCard';
 import FinanceSection from './FinanceSection';
@@ -50,7 +53,7 @@ export default async function ClientPage({
   searchParams,
 }: {
   params: { id: string };
-  searchParams: { googleAds?: string; ga4?: string; gtm?: string; gbp?: string; meta?: string; snapchat?: string; message?: string };
+  searchParams: { googleAds?: string; ga4?: string; gtm?: string; gbp?: string; meta?: string; snapchat?: string; tiktok?: string; message?: string };
 }) {
   const me = await getCurrentUser();
   if (!me) redirect('/login');
@@ -58,7 +61,7 @@ export default async function ClientPage({
   const access = await getClientAccess(me, params.id);
   if (!access) notFound();
   const isAdmin = me.role === 'ADMIN';
-  const [canCampaigns, canGoogleAds, canTargeting, canInvoices, canReporting, canTagManager, canBusinessProfile, canMeta, canSnapchat] = await Promise.all([
+  const [canCampaigns, canGoogleAds, canTargeting, canInvoices, canReporting, canTagManager, canBusinessProfile, canMeta, canSnapchat, canTikTok] = await Promise.all([
     hasCapability(me, params.id, 'campaigns'),
     hasCapability(me, params.id, 'googleAds'),
     hasCapability(me, params.id, 'targeting'),
@@ -68,6 +71,7 @@ export default async function ClientPage({
     hasCapability(me, params.id, 'businessProfile'),
     hasCapability(me, params.id, 'meta'),
     hasCapability(me, params.id, 'snapchat'),
+    hasCapability(me, params.id, 'tiktok'),
   ]);
 
   const client = await db.client.findUnique({
@@ -79,6 +83,7 @@ export default async function ClientPage({
       businessProfileAccounts: { include: { locations: { include: { metrics: true, reviews: true } } } },
       metaAdAccounts: { include: { campaigns: { where: { hiddenFromList: false }, select: { id: true, name: true } } } },
       snapAdAccounts: true,
+      tiktokAdAccounts: true,
       campaigns: { orderBy: { createdAt: 'desc' } },
       actionLogs: { orderBy: { createdAt: 'desc' }, take: 20 },
       invoices: { orderBy: { issuedAt: 'desc' } },
@@ -92,6 +97,7 @@ export default async function ClientPage({
   const gbpAccount = client.businessProfileAccounts[0] ?? null;
   const metaAccount = client.metaAdAccounts[0] ?? null;
   const snapAccount = client.snapAdAccounts[0] ?? null;
+  const tiktokAccount = client.tiktokAdAccounts[0] ?? null;
   const gtmDeployments = client.actionLogs.filter((l) => l.actionType === 'DEPLOY_GTM_TAG');
   const campaignNames = Object.fromEntries(client.campaigns.map((c) => [c.id, c.name]));
 
@@ -209,6 +215,21 @@ export default async function ClientPage({
       try {
         const pending: PendingSnapchatConnect = JSON.parse(raw);
         if (pending.clientId === client.id) pendingSnapAccounts = pending.accounts;
+      } catch {
+        // malformed/expired cookie — just don't show the picker
+      }
+    }
+  }
+
+  // Same picker pattern as Snapchat — see /api/tiktok/callback and
+  // pendingConnectCookie.ts.
+  let pendingTikTokAccounts: PendingTikTokConnect['accounts'] | null = null;
+  if (searchParams.tiktok === 'choose') {
+    const raw = cookies().get(PENDING_TIKTOK_CONNECT_COOKIE)?.value;
+    if (raw) {
+      try {
+        const pending: PendingTikTokConnect = JSON.parse(raw);
+        if (pending.clientId === client.id) pendingTikTokAccounts = pending.accounts;
       } catch {
         // malformed/expired cookie — just don't show the picker
       }
@@ -621,6 +642,70 @@ export default async function ClientPage({
     });
   }
 
+  if (canTikTok) {
+    tabs.push({
+      id: 'tiktok',
+      label: 'TikTok Ads',
+      content: (
+        <>
+          {pendingTikTokAccounts && (
+            <div className="card" style={{ borderColor: 'var(--accent2)' }}>
+              <h2 style={{ fontSize: '1.1rem', marginBottom: 6 }}>Choose the TikTok advertiser account to connect</h2>
+              <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: 12 }}>
+                Your TikTok login has access to {pendingTikTokAccounts.length} advertiser accounts. Pick the one
+                that belongs to this client — this selection expires in 10 minutes, so reconnect if you don't
+                finish in time.
+              </p>
+              <form action="/api/tiktok/connect/finish" method="POST">
+                <input type="hidden" name="clientId" value={client.id} />
+                {pendingTikTokAccounts.map((a, i) => (
+                  <label
+                    key={a.id}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < pendingTikTokAccounts!.length - 1 ? '1px solid var(--card-border)' : 'none', cursor: 'pointer' }}
+                  >
+                    <input type="radio" name="advertiserId" value={a.id} defaultChecked={i === 0} style={{ width: 'auto', margin: 0 }} />
+                    <span>
+                      <strong>{a.name}</strong>{' '}
+                      <span style={{ color: 'var(--text-dim)', fontSize: '0.82rem' }}>({a.currency})</span>
+                    </span>
+                  </label>
+                ))}
+                <button type="submit" className="btn" style={{ marginTop: 12 }}>
+                  Connect this account
+                </button>
+              </form>
+            </div>
+          )}
+          <div className="card">
+            <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>TikTok Ads connection</h2>
+            {tiktokAccount ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <p style={{ margin: 0 }}>
+                  Connected — advertiser account <code>{tiktokAccount.advertiserId}</code>
+                </p>
+                <form action="/api/tiktok/disconnect" method="POST">
+                  <input type="hidden" name="clientId" value={client.id} />
+                  <button type="submit" className="btn btn-secondary" style={{ fontSize: '0.8rem' }}>
+                    Disconnect / relink
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <>
+                <p style={{ color: 'var(--text-dim)', marginBottom: 12 }}>
+                  Not connected yet. The client needs to add your TikTok Business Center account to their
+                  advertiser account first.
+                </p>
+                <ConnectTikTokButton clientId={client.id} />
+              </>
+            )}
+          </div>
+          {tiktokAccount && <TikTokReportingDashboard tiktokAdAccountId={tiktokAccount.id} isAdmin={isAdmin} />}
+        </>
+      ),
+    });
+  }
+
   if (canCampaigns) {
     tabs.push({
       id: 'campaigns',
@@ -823,6 +908,16 @@ export default async function ClientPage({
       {searchParams.snapchat === 'error' && (
         <div className="card" style={{ borderColor: '#ef4444' }}>
           Snapchat connection failed: {searchParams.message}
+        </div>
+      )}
+      {searchParams.tiktok === 'connected' && (
+        <div className="card" style={{ borderColor: 'var(--accent2)' }}>
+          TikTok ad account connected successfully.
+        </div>
+      )}
+      {searchParams.tiktok === 'error' && (
+        <div className="card" style={{ borderColor: '#ef4444' }}>
+          TikTok connection failed: {searchParams.message}
         </div>
       )}
 
