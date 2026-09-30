@@ -159,7 +159,7 @@ export default function TeamTable({
           <label>Name</label>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Doe" />
           <label>Email</label>
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@adpac.ai" />
+          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@adpac.to" />
           <label>Temporary password (8+ characters)</label>
           <input
             type="text"
