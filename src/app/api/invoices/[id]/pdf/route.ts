@@ -70,7 +70,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     .text('Sheridan, WY 82801', 50, colY + 42)
     .text('US', 50, colY + 56)
     .text('Tax ID: 99-2400387', 50, colY + 70)
-    .text('hello@adpac.ai', 50, colY + 84);
+    .text('hello@adpac.to', 50, colY + 84);
 
   doc.font('Helvetica-Bold').fillColor('#111').text('Bill to', 320, colY);
   doc.font('Helvetica').fillColor('#333').text(invoice.client.name, 320, colY + 14);
