@@ -43,10 +43,10 @@ export default async function DashboardPage() {
 
   const [pendingByClient, rechargeByClient, google, meta, snap, tiktok] = ids.length
     ? await Promise.all([
-        db.actionLog.groupBy({ by: ['clientId'], where: { clientId: { in: ids }, status: AI_PENDING }, _count: { _all: true } }),
+        db.actionLog.findMany({ where: { clientId: { in: ids }, status: AI_PENDING }, select: { clientId: true } }),
         me.role === 'ADMIN'
-          ? db.invoice.groupBy({ by: ['clientId'], where: { clientId: { in: ids }, status: 'UNPAID', source: 'RECHARGE_REQUEST' }, _count: { _all: true } })
-          : Promise.resolve([] as { clientId: string; _count: { _all: number } }[]),
+          ? db.invoice.findMany({ where: { clientId: { in: ids }, status: 'UNPAID', source: 'RECHARGE_REQUEST' }, select: { clientId: true } })
+          : Promise.resolve([] as { clientId: string }[]),
         db.dailyMetric.findMany({ where: { date: range, campaign: { clientId: { in: ids } } }, select: { costCents: true, campaign: { select: { clientId: true } } } }),
         db.metaDailyMetric.findMany({ where: { date: range, campaign: { adAccount: { clientId: { in: ids } } } }, select: { costCents: true, campaign: { select: { adAccount: { select: { clientId: true } } } } } }),
         db.snapDailyMetric.findMany({ where: { date: range, campaign: { adAccount: { clientId: { in: ids } } } }, select: { costCents: true, campaign: { select: { adAccount: { select: { clientId: true } } } } } }),
@@ -54,8 +54,13 @@ export default async function DashboardPage() {
       ])
     : [[], [], [], [], [], []];
 
-  const pending = new Map((pendingByClient as any[]).map((r) => [r.clientId, r._count._all as number]));
-  const recharge = new Map((rechargeByClient as any[]).map((r) => [r.clientId, r._count._all as number]));
+  const countBy = (rows: { clientId: string }[]) => {
+    const m = new Map<string, number>();
+    for (const r of rows) m.set(r.clientId, (m.get(r.clientId) ?? 0) + 1);
+    return m;
+  };
+  const pending = countBy(pendingByClient as { clientId: string }[]);
+  const recharge = countBy(rechargeByClient as { clientId: string }[]);
   const spend = new Map<string, number>();
   const add = (id: string | undefined, cents: number) => {
     if (id) spend.set(id, (spend.get(id) ?? 0) + cents);
