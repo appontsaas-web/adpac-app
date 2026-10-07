@@ -12,7 +12,7 @@ interface ExistingInput {
   additionalNotes: string | null;
 }
 
-export default function MonthlyInputForm({ existing }: { existing: ExistingInput | null }) {
+export default function MonthlyInputForm({ existing, prefilled = false }: { existing: ExistingInput | null; prefilled?: boolean }) {
   const { tr } = useI18n();
   const router = useRouter();
   const [goalText, setGoalText] = useState(existing?.goalText ?? '');
@@ -20,6 +20,7 @@ export default function MonthlyInputForm({ existing }: { existing: ExistingInput
   const [budgetNotes, setBudgetNotes] = useState(existing?.budgetNotes ?? '');
   const [competitorNotes, setCompetitorNotes] = useState(existing?.competitorNotes ?? '');
   const [additionalNotes, setAdditionalNotes] = useState(existing?.additionalNotes ?? '');
+  const [showMore, setShowMore] = useState(!!(existing?.budgetNotes || existing?.competitorNotes || existing?.additionalNotes));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +50,11 @@ export default function MonthlyInputForm({ existing }: { existing: ExistingInput
 
   return (
     <form onSubmit={handleSubmit} className="card">
+      {prefilled && (
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: 12 }}>
+          {tr("We prefilled this from last month — change only what is different, then submit.")}
+        </p>
+      )}
       <label>{tr("What are you trying to achieve this month? *")}</label>
       <textarea
         value={goalText}
@@ -65,12 +71,20 @@ export default function MonthlyInputForm({ existing }: { existing: ExistingInput
         rows={3}
         placeholder={tr("e.g. IT managers at 100-500 person companies, mostly US/Canada, who are frustrated with their current vendor")}
       />
+      <button type="button" className="btn btn-secondary" onClick={() => setShowMore((v) => !v)} style={{ marginTop: 8 }}>
+        {showMore ? tr("Hide extra details") : tr("Add more details (optional)")}
+      </button>
+      {showMore && (
+        <div>
       <label>{tr("Anything about budget we should know? (optional)")}</label>
       <textarea value={budgetNotes} onChange={(e) => setBudgetNotes(e.target.value)} rows={2} />
       <label>{tr("Competitors or positioning notes? (optional)")}</label>
       <textarea value={competitorNotes} onChange={(e) => setCompetitorNotes(e.target.value)} rows={2} />
       <label>{tr("Anything else? (optional)")}</label>
       <textarea value={additionalNotes} onChange={(e) => setAdditionalNotes(e.target.value)} rows={2} />
+
+        </div>
+      )}
 
       {error && <p style={{ color: '#ef4444', fontSize: '0.85rem' }}>{error}</p>}
       <button className="btn" type="submit" disabled={saving} style={{ width: '100%', marginTop: 12 }}>

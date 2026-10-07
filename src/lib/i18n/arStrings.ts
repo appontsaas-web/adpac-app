@@ -276,7 +276,7 @@ export const AR_STRINGS: Record<string, string> = {
   "Keyword": "الكلمة المفتاحية",
   "Match": "المطابقة",
   "Ad group": "المجموعة الإعلانية",
-  "Spend": "الإنفاق (Spend)",
+  "Spend": "الإنفاق",
   "Avg. CPC": "متوسط تكلفة النقرة (CPC)",
   "Quality score": "درجة الجودة",
   "No search-term data yet for this period.": "لا توجد بيانات عبارات بحث لهذه الفترة بعد.",
@@ -647,7 +647,26 @@ export const AR_STRINGS: Record<string, string> = {
   "Needs attention": "يحتاج إلى اهتمام",
   "No clients match.": "لا يوجد عملاء مطابقون.",
   "Connected": "مربوط",
-  "This month": "هذا الشهر"
+  "This month": "هذا الشهر",
+  "Needs you": "بانتظارك",
+  "Tell us your goals for this month": "أخبرنا بأهدافك لهذا الشهر",
+  "Takes about a minute — we prefill it from last month.": "تستغرق دقيقة تقريباً — نملأها مسبقاً من الشهر الماضي.",
+  "Update goals": "تحديث الأهداف",
+  "You have an unpaid invoice": "لديك فاتورة غير مدفوعة",
+  "Contact billing": "تواصل مع الفواتير",
+  "Results (conversions)": "النتائج (التحويلات)",
+  "Cost per result": "تكلفة النتيجة",
+  "Return on ad spend": "العائد على الإنفاق الإعلاني",
+  "vs same days last month": "مقارنة بنفس الأيام من الشهر الماضي",
+  "You're all caught up": "لا يوجد شيء بانتظارك",
+  "nothing is waiting on you. Here is how your ads are doing.": "لا شيء بانتظارك. هكذا يسير أداء إعلاناتك.",
+  "This month so far": "هذا الشهر حتى الآن",
+  "Where your budget went": "أين ذهبت ميزانيتك",
+  "Your results will appear here as soon as your campaigns start delivering.": "ستظهر نتائجك هنا فور بدء حملاتك بتحقيق نتائج.",
+  "This month's goals are submitted.": "تم إرسال أهداف هذا الشهر.",
+  "We prefilled this from last month — change only what is different, then submit.": "ملأنا هذا مسبقاً من الشهر الماضي — غيّر ما اختلف فقط ثم أرسل.",
+  "Hide extra details": "إخفاء التفاصيل الإضافية",
+  "Add more details (optional)": "إضافة تفاصيل أخرى (اختياري)"
 };
 
 export function trString(locale: string, en: string, vars?: Record<string, string | number>): string {
