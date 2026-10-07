@@ -624,7 +624,12 @@ export const AR_STRINGS: Record<string, string> = {
   "CPM": "تكلفة الألف ظهور (CPM)",
   "Avg. daily reach": "متوسط الوصول اليومي",
   "Clicks (swipes)": "النقرات (السحبات)",
-  "Currency": "العملة"
+  "Currency": "العملة",
+  "Total spend — all platforms": "إجمالي الإنفاق — جميع المنصات",
+  "% of spend": "% من الإنفاق",
+  "Total": "الإجمالي",
+  "accounts": "حسابات",
+  "Spend by platform": "الإنفاق حسب المنصة"
 };
 
 export function trString(locale: string, en: string, vars?: Record<string, string | number>): string {

@@ -6,9 +6,10 @@ import { useState, useEffect, useCallback } from 'react';
 import MonthlyGoalCard from './MonthlyGoalCard';
 
 interface PlatformTotals {
-  platform: 'google' | 'meta' | 'snapchat';
+  platform: 'google' | 'meta' | 'snapchat' | 'tiktok';
   label: string;
   connected: boolean;
+  accountCount: number;
   impressions: number;
   clicks: number;
   costCents: number;
@@ -51,10 +52,18 @@ const RANGES = [
   { label: '90d', days: 90 },
 ];
 
+const PLATFORM_COLORS: Record<string, string> = {
+  google: '#4285f4',
+  meta: '#a855f7',
+  snapchat: '#facc15',
+  tiktok: '#22d3ee',
+};
+
 const PLATFORM_LABELS: Record<string, string> = {
   google: 'Google Ads',
   meta: 'Meta Ads',
   snapchat: 'Snapchat Ads',
+  tiktok: 'TikTok Ads',
   businessProfile: 'Business Profile',
 };
 
@@ -138,8 +147,34 @@ export default function SummaryReportDashboard({ clientId }: { clientId: string 
 
         {data && (
           <>
+            <div style={{ background: 'var(--bg-alt)', border: '1px solid var(--card-border)', borderRadius: 12, padding: '14px 16px', marginBottom: 16 }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginBottom: 4 }}>{tr("Total spend — all platforms")}</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: 12 }}>{money(data.totals.costCents)}</div>
+              {data.totals.costCents > 0 && (
+                <>
+                  <div style={{ display: 'flex', height: 10, borderRadius: 6, overflow: 'hidden', marginBottom: 10 }}>
+                    {data.platforms.filter((p) => p.costCents > 0).map((p) => (
+                      <div
+                        key={p.platform}
+                        title={`${p.label}: ${money(p.costCents)}`}
+                        style={{ width: `${(p.costCents / data.totals.costCents) * 100}%`, background: PLATFORM_COLORS[p.platform] }}
+                      />
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, fontSize: '0.8rem' }}>
+                    {data.platforms.filter((p) => p.connected).map((p) => (
+                      <div key={p.platform} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ width: 9, height: 9, borderRadius: 2, background: PLATFORM_COLORS[p.platform], display: 'inline-block' }} />
+                        <span>{p.label}</span>
+                        <strong>{money(p.costCents)}</strong>
+                        <span style={{ color: 'var(--text-dim)' }}>({((p.costCents / data.totals.costCents) * 100).toFixed(1)}%)</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: 20 }}>
-              <KpiCard label="Total spend" value={money(data.totals.costCents)} />
               <KpiCard label={t('metrics.clicks')} value={num(data.totals.clicks)} />
               <KpiCard label={t('metrics.impressions')} value={num(data.totals.impressions)} />
               <KpiCard label={t('metrics.ctr')} value={`${(data.totals.ctr * 100).toFixed(2)}%`} />
@@ -158,6 +193,7 @@ export default function SummaryReportDashboard({ clientId }: { clientId: string 
                     <th style={{ padding: '8px 6px' }}>{tr("Platform")}</th>
                     <th style={{ padding: '8px 6px' }}>{tr("Campaigns")}</th>
                     <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Spend")}</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("% of spend")}</th>
                     <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Clicks")}</th>
                     <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Impr.")}</th>
                     <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Conversions")}</th>
@@ -166,14 +202,24 @@ export default function SummaryReportDashboard({ clientId }: { clientId: string 
                 <tbody>
                   {data.platforms.map((p) => (
                     <tr key={p.platform} style={{ borderBottom: '1px solid var(--card-border)', opacity: p.connected ? 1 : 0.5 }}>
-                      <td style={{ padding: '8px 6px' }}>{p.label}{!p.connected && ' (not connected)'}</td>
+                      <td style={{ padding: '8px 6px' }}>{p.label}{!p.connected ? ` ${tr('(not connected)')}` : p.accountCount > 1 ? ` · ${p.accountCount} ${tr('accounts')}` : ''}</td>
                       <td style={{ padding: '8px 6px' }}>{num(p.campaignCount)}</td>
                       <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(p.costCents)}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{data.totals.costCents > 0 ? `${num((p.costCents / data.totals.costCents) * 100, 1)}%` : '—'}</td>
                       <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(p.clicks)}</td>
                       <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(p.impressions)}</td>
                       <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(p.conversions)}</td>
                     </tr>
                   ))}
+                  <tr style={{ fontWeight: 700 }}>
+                    <td style={{ padding: '8px 6px' }}>{tr("Total")}</td>
+                    <td style={{ padding: '8px 6px' }}>{num(data.platforms.reduce((a, p) => a + p.campaignCount, 0))}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(data.totals.costCents)}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{data.totals.costCents > 0 ? '100%' : '—'}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(data.totals.clicks)}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(data.totals.impressions)}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(data.totals.conversions)}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>

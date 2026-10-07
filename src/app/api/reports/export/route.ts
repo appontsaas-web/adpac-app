@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, canViewReporting } from '@/lib/access';
 import { db } from '@/lib/db';
+import { loadPlatformRollup } from '@/lib/platformSpend';
 import PDFDocument from 'pdfkit';
 import path from 'path';
 
@@ -334,94 +335,17 @@ async function buildMetaData(
 // campaignId/audienceDimension filters — the Summary tab is a whole-account
 // rollup, not a single-campaign drill-down.
 async function buildSummaryData(clientId: string, since: Date, until: Date): Promise<ReportData | null> {
-  const client = await db.client.findUnique({
-    where: { id: clientId },
-    include: { googleAdsAccounts: { take: 1 }, metaAdAccounts: { take: 1 }, snapAdAccounts: { take: 1 } },
-  });
+  const client = await db.client.findUnique({ where: { id: clientId }, select: { name: true } });
   if (!client) return null;
-
-  const daily = new Map<string, number>();
-  const campaigns: ReportData['campaigns'] = [];
-  const totals = { impressions: 0, clicks: 0, costCents: 0, conversions: 0, conversionValueCents: 0 };
-
-  function addDaily(rows: { date: Date; costCents: number }[]) {
-    for (const r of rows) {
-      const key = r.date.toISOString().slice(0, 10);
-      daily.set(key, (daily.get(key) ?? 0) + r.costCents);
-    }
-  }
-  function addTotals(rows: { impressions: number; clicks: number; costCents: number; conversions: number; conversionValueCents: number }[]) {
-    for (const r of rows) {
-      totals.impressions += r.impressions;
-      totals.clicks += r.clicks;
-      totals.costCents += r.costCents;
-      totals.conversions += r.conversions;
-      totals.conversionValueCents += r.conversionValueCents;
-    }
-  }
-
-  const googleAccount = client.googleAdsAccounts[0];
-  if (googleAccount) {
-    const camps = await db.campaign.findMany({ where: { googleAdsAccountId: googleAccount.id }, select: { id: true, name: true } });
-    const campIds = camps.map((c) => c.id);
-    const metrics = campIds.length ? await db.dailyMetric.findMany({ where: { campaignId: { in: campIds }, date: { gte: since, lte: until } } }) : [];
-    addDaily(metrics);
-    addTotals(metrics);
-    const byCampaign = new Map<string, { name: string; costCents: number; clicks: number; impressions: number; conversions: number }>();
-    for (const m of metrics) {
-      const c = camps.find((c) => c.id === m.campaignId);
-      if (!c) continue;
-      const entry = byCampaign.get(c.id) ?? { name: `[Google] ${c.name}`, costCents: 0, clicks: 0, impressions: 0, conversions: 0 };
-      entry.costCents += m.costCents;
-      entry.clicks += m.clicks;
-      entry.impressions += m.impressions;
-      entry.conversions += m.conversions;
-      byCampaign.set(c.id, entry);
-    }
-    campaigns.push(...byCampaign.values());
-  }
-
-  const metaAccount = client.metaAdAccounts[0];
-  if (metaAccount) {
-    const camps = await db.metaCampaign.findMany({ where: { adAccountId: metaAccount.id }, select: { id: true, name: true } });
-    const campIds = camps.map((c) => c.id);
-    const metrics = campIds.length ? await db.metaDailyMetric.findMany({ where: { campaignId: { in: campIds }, date: { gte: since, lte: until } } }) : [];
-    addDaily(metrics);
-    addTotals(metrics);
-    const byCampaign = new Map<string, { name: string; costCents: number; clicks: number; impressions: number; conversions: number }>();
-    for (const m of metrics) {
-      const c = camps.find((c) => c.id === m.campaignId);
-      if (!c) continue;
-      const entry = byCampaign.get(c.id) ?? { name: `[Meta] ${c.name}`, costCents: 0, clicks: 0, impressions: 0, conversions: 0 };
-      entry.costCents += m.costCents;
-      entry.clicks += m.clicks;
-      entry.impressions += m.impressions;
-      entry.conversions += m.conversions;
-      byCampaign.set(c.id, entry);
-    }
-    campaigns.push(...byCampaign.values());
-  }
-
-  const snapAccount = client.snapAdAccounts[0];
-  if (snapAccount) {
-    const camps = await db.snapCampaign.findMany({ where: { adAccountId: snapAccount.id }, select: { id: true, name: true } });
-    const campIds = camps.map((c) => c.id);
-    const metrics = campIds.length ? await db.snapDailyMetric.findMany({ where: { campaignId: { in: campIds }, date: { gte: since, lte: until } } }) : [];
-    addDaily(metrics);
-    addTotals(metrics);
-    const byCampaign = new Map<string, { name: string; costCents: number; clicks: number; impressions: number; conversions: number }>();
-    for (const m of metrics) {
-      const c = camps.find((c) => c.id === m.campaignId);
-      if (!c) continue;
-      const entry = byCampaign.get(c.id) ?? { name: `[Snapchat] ${c.name}`, costCents: 0, clicks: 0, impressions: 0, conversions: 0 };
-      entry.costCents += m.costCents;
-      entry.clicks += m.clicks;
-      entry.impressions += m.impressions;
-      entry.conversions += m.conversions;
-      byCampaign.set(c.id, entry);
-    }
-    campaigns.push(...byCampaign.values());
-  }
+  const { platforms, totals, campaigns: rolledCampaigns, daily: rolledDaily } = await loadPlatformRollup(clientId, since, until);
+  const campaigns: ReportData['campaigns'] = rolledCampaigns.map((c) => ({
+    name: `[${c.platform === 'google' ? 'Google' : c.platform === 'meta' ? 'Meta' : c.platform === 'snapchat' ? 'Snapchat' : 'TikTok'}] ${c.name}`,
+    costCents: c.costCents,
+    clicks: c.clicks,
+    impressions: c.impressions,
+    conversions: c.conversions,
+  }));
+  const daily = new Map(rolledDaily.map((d) => [d.date, d.costCents] as [string, number]));
 
   const ctr = totals.impressions > 0 ? totals.clicks / totals.impressions : 0;
   const avgCpcCents = totals.clicks > 0 ? totals.costCents / totals.clicks : 0;
@@ -440,7 +364,7 @@ async function buildSummaryData(clientId: string, since: Date, until: Date): Pro
     { label: 'ROAS', value: totals.costCents > 0 ? `${roas.toFixed(2)}x` : '—' },
   ];
 
-  const connectedPlatforms = [googleAccount && 'Google Ads', metaAccount && 'Meta Ads', snapAccount && 'Snapchat Ads'].filter(Boolean).join(', ') || 'no platforms connected';
+  const connectedPlatforms = platforms.filter((p) => p.connected).map((p) => p.label).join(', ') || 'no platforms connected';
 
   return {
     clientName: client.name,
@@ -449,7 +373,12 @@ async function buildSummaryData(clientId: string, since: Date, until: Date): Pro
     kpis,
     daily: Array.from(daily.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([date, costCents]) => ({ date, costCents })),
     campaigns: campaigns.sort((a, b) => b.costCents - a.costCents),
-    audience: [],
+    audience: [
+      {
+        title: 'Spend by platform',
+        rows: platforms.filter((p) => p.connected).map((p) => ({ value: p.label, costCents: p.costCents, conversions: p.conversions })),
+      },
+    ],
   };
 }
 
