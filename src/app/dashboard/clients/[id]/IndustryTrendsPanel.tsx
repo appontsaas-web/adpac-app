@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
+
 import { useState } from 'react';
 
 interface PlatformTotals {
@@ -35,9 +37,6 @@ function pct(n: number | null) {
   return n === null ? '—' : `${(n * 100).toFixed(2)}%`;
 }
 
-function money(cents: number | null) {
-  return cents === null ? '—' : `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 function diffLabel(clientVal: number | null, peerVal: number | null, higherIsBetter: boolean) {
   if (clientVal === null || peerVal === null || peerVal === 0) return null;
@@ -57,6 +56,8 @@ function diffLabel(clientVal: number | null, peerVal: number | null, higherIsBet
 // lib/industryTrends.ts). Computed live on click — no stored history, always
 // reflects whatever's currently synced.
 export default function IndustryTrendsPanel({ clientId }: { clientId: string }) {
+  const { money: fmtMoney } = useI18n();
+  const money = (cents: number | null) => (cents === null ? '—' : fmtMoney(cents));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<IndustryTrendResult | null | undefined>(undefined);

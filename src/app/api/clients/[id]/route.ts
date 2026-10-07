@@ -1,3 +1,5 @@
+import { isDisplayCurrency } from '@/lib/currency';
+import { isLocale } from '@/lib/i18n/config';
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, hasCapability } from '@/lib/access';
 import { db } from '@/lib/db';
@@ -39,6 +41,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.targetLocations !== undefined) data.targetLocations = body.targetLocations || null;
   if (body.portalContactName !== undefined) data.portalContactName = body.portalContactName || null;
   if (body.portalContactEmail !== undefined) data.portalContactEmail = body.portalContactEmail || null;
+  if (body.displayCurrency !== undefined) {
+    const c = String(body.displayCurrency || '').toUpperCase();
+    if (c && !isDisplayCurrency(c)) {
+      return NextResponse.json({ error: `Unsupported display currency "${c}"` }, { status: 400 });
+    }
+    data.displayCurrency = c && c !== 'USD' ? c : null;
+  }
+  if (body.portalContactLocale !== undefined) {
+    if (!isLocale(body.portalContactLocale)) return NextResponse.json({ error: 'Invalid locale' }, { status: 400 });
+    data.portalContactLocale = body.portalContactLocale;
+  }
   if (body.spendGuardrailEnabled !== undefined) data.spendGuardrailEnabled = !!body.spendGuardrailEnabled;
 
   try {

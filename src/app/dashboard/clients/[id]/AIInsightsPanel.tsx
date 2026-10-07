@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -44,9 +46,6 @@ function pct(n: number | null) {
   return n === null ? '—' : `${(n * 100).toFixed(1)}%`;
 }
 
-function money(cents: number) {
-  return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 // Compact before/after bar for one metric — width is proportional to value
 // (capped so an extreme spike/drop doesn't blow out the layout), so you can
@@ -114,6 +113,7 @@ export default function AIInsightsPanel({
   insights: Insight[];
   outcomes: Record<string, Outcome>;
 }) {
+  const { money, t, num } = useI18n();
   const router = useRouter();
   const [running, setRunning] = useState(false);
   const [runningFunnel, setRunningFunnel] = useState(false);
@@ -297,7 +297,7 @@ export default function AIInsightsPanel({
                     format={(n) => n.toFixed(2)}
                   />
                   <TrendBar
-                    label="CTR"
+                    label={t('metrics.ctr')}
                     prior={payload.signalSnapshot.prior14dCtr * 100}
                     current={payload.signalSnapshot.last7dCtr * 100}
                     format={(n) => `${n.toFixed(2)}%`}
@@ -337,7 +337,7 @@ export default function AIInsightsPanel({
                       currentLabel="since"
                     />
                     <TrendBar
-                      label="CTR"
+                      label={t('metrics.ctr')}
                       prior={(payload.signalSnapshot?.last7dCtr ?? 0) * 100}
                       current={outcome.ctr * 100}
                       format={(n) => `${n.toFixed(2)}%`}
@@ -384,21 +384,21 @@ export default function AIInsightsPanel({
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4 }}>
                     <span style={{ color: 'var(--text-dim)' }}>Clicks → Sessions</span>
                     <span>
-                      {payload.stageRates.clicks.toLocaleString()} → {payload.stageRates.sessions.toLocaleString()} (
+                      {num(payload.stageRates.clicks)} → {num(payload.stageRates.sessions)} (
                       {pct(payload.stageRates.clickToSessionRate)})
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4 }}>
                     <span style={{ color: 'var(--text-dim)' }}>Sessions → Engaged</span>
                     <span>
-                      {payload.stageRates.sessions.toLocaleString()} → {payload.stageRates.engagedSessions.toLocaleString()} (
+                      {num(payload.stageRates.sessions)} → {num(payload.stageRates.engagedSessions)} (
                       {pct(payload.stageRates.sessionToEngagedRate)})
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 8 }}>
                     <span style={{ color: 'var(--text-dim)' }}>Engaged → Conversions</span>
                     <span>
-                      {payload.stageRates.engagedSessions.toLocaleString()} → {payload.stageRates.conversions.toLocaleString()} (
+                      {num(payload.stageRates.engagedSessions)} → {num(payload.stageRates.conversions)} (
                       {pct(payload.stageRates.engagedToConversionRate)})
                     </span>
                   </div>

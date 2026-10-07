@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
+
 import { useState, useEffect, useCallback } from 'react';
 import MonthlyGoalCard from './MonthlyGoalCard';
 
@@ -56,9 +58,6 @@ const PLATFORM_LABELS: Record<string, string> = {
   businessProfile: 'Business Profile',
 };
 
-function money(cents: number) {
-  return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 // Cross-platform rollup — the whole point is to answer "how is this client
 // doing overall" without clicking through each platform tab separately.
@@ -66,6 +65,7 @@ function money(cents: number) {
 // computes (via the platform's own DailyMetric-family table) rather than
 // re-deriving anything, so this can never drift from what those tabs show.
 export default function SummaryReportDashboard({ clientId }: { clientId: string }) {
+  const { money, t, num } = useI18n();
   const [days, setDays] = useState(30);
   const [data, setData] = useState<SummaryResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -140,14 +140,14 @@ export default function SummaryReportDashboard({ clientId }: { clientId: string 
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: 20 }}>
               <KpiCard label="Total spend" value={money(data.totals.costCents)} />
-              <KpiCard label="Clicks" value={data.totals.clicks.toLocaleString()} />
-              <KpiCard label="Impressions" value={data.totals.impressions.toLocaleString()} />
-              <KpiCard label="CTR" value={`${(data.totals.ctr * 100).toFixed(2)}%`} />
-              <KpiCard label="Avg. CPC" value={money(data.totals.avgCpcCents)} />
-              <KpiCard label="Conversions" value={data.totals.conversions.toLocaleString()} />
-              <KpiCard label="Cost / conversion" value={data.totals.conversions > 0 ? money(data.totals.costPerConversionCents) : '—'} />
-              <KpiCard label="Conversion value" value={money(data.totals.conversionValueCents)} />
-              <KpiCard label="ROAS" value={data.totals.costCents > 0 ? `${data.totals.roas.toFixed(2)}x` : '—'} />
+              <KpiCard label={t('metrics.clicks')} value={num(data.totals.clicks)} />
+              <KpiCard label={t('metrics.impressions')} value={num(data.totals.impressions)} />
+              <KpiCard label={t('metrics.ctr')} value={`${(data.totals.ctr * 100).toFixed(2)}%`} />
+              <KpiCard label={t('metrics.avgCpc')} value={money(data.totals.avgCpcCents)} />
+              <KpiCard label={t('metrics.conversions')} value={num(data.totals.conversions)} />
+              <KpiCard label={t('metrics.costPerConversion')} value={data.totals.conversions > 0 ? money(data.totals.costPerConversionCents) : '—'} />
+              <KpiCard label={t('metrics.conversionValue')} value={money(data.totals.conversionValueCents)} />
+              <KpiCard label={t('metrics.roas')} value={data.totals.costCents > 0 ? `${data.totals.roas.toFixed(2)}x` : '—'} />
             </div>
 
             <h3 style={{ fontSize: '0.95rem', marginBottom: 10 }}>Delivery by platform</h3>
@@ -167,11 +167,11 @@ export default function SummaryReportDashboard({ clientId }: { clientId: string 
                   {data.platforms.map((p) => (
                     <tr key={p.platform} style={{ borderBottom: '1px solid var(--card-border)', opacity: p.connected ? 1 : 0.5 }}>
                       <td style={{ padding: '8px 6px' }}>{p.label}{!p.connected && ' (not connected)'}</td>
-                      <td style={{ padding: '8px 6px' }}>{p.campaignCount.toLocaleString()}</td>
+                      <td style={{ padding: '8px 6px' }}>{num(p.campaignCount)}</td>
                       <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(p.costCents)}</td>
-                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{p.clicks.toLocaleString()}</td>
-                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{p.impressions.toLocaleString()}</td>
-                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{p.conversions.toLocaleString()}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(p.clicks)}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(p.impressions)}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(p.conversions)}</td>
                     </tr>
                   ))}
                 </tbody>

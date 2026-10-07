@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import TokenBalanceCard from './TokenBalanceCard';
@@ -15,9 +17,6 @@ interface Invoice {
   paymentLink: string | null;
 }
 
-function money(cents: number) {
-  return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 const badgeClass: Record<string, string> = {
   UNPAID: 'badge-pending',
@@ -30,6 +29,7 @@ const badgeClass: Record<string, string> = {
 // reviews and marks it paid the usual way. Everything else about invoices
 // (create/edit/delete/mark paid directly) is always admin-only.
 export default function InvoicesViewOnly({ clientId, invoices }: { clientId: string; invoices: Invoice[] }) {
+  const { moneyUsd: money, t } = useI18n();
   const router = useRouter();
   const [requesting, setRequesting] = useState(false);
   const [amount, setAmount] = useState('');

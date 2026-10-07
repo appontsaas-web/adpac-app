@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
+
 import { useState, useEffect, useCallback } from 'react';
 
 interface AdSetRow {
@@ -30,9 +32,6 @@ const RANGES = [
   { label: '90d', days: 90 },
 ];
 
-function money(cents: number) {
-  return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 function statusColor(status: string) {
   switch (status) {
@@ -62,6 +61,7 @@ export default function MetaAdPerformanceCard({
   metaAdAccountId: string;
   campaignId?: string | null;
 }) {
+  const { money, num } = useI18n();
   const [tab, setTab] = useState<Tab>('Ad sets');
   const [days, setDays] = useState(30);
   const [customRange, setCustomRange] = useState<{ since: string; until: string } | null>(null);
@@ -211,9 +211,9 @@ export default function MetaAdPerformanceCard({
                     <td style={{ padding: '8px 6px', color: 'var(--text-dim)', fontSize: '0.78rem' }}>{s.targetingSummary ?? '—'}</td>
                     <td style={{ padding: '8px 6px', textAlign: 'right' }}>{s.dailyBudgetCents != null ? money(s.dailyBudgetCents) : '—'}</td>
                     <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(s.costCents)}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{s.clicks.toLocaleString()}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{s.impressions.toLocaleString()}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{s.conversions.toLocaleString()}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(s.clicks)}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(s.impressions)}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(s.conversions)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -243,8 +243,8 @@ export default function MetaAdPerformanceCard({
                     <td style={{ padding: '8px 6px' }}>{a.name}</td>
                     <td style={{ padding: '8px 6px', fontWeight: 700, color: statusColor(a.status), fontSize: '0.78rem' }}>{a.status}</td>
                     <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(a.costCents)}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{a.clicks.toLocaleString()}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{a.conversions.toLocaleString()}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(a.clicks)}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(a.conversions)}</td>
                   </tr>
                 ))}
               </tbody>

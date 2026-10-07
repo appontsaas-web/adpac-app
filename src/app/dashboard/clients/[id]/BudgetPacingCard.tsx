@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
+
 import { useState, useEffect, useCallback } from 'react';
 
 interface PacingCampaignRow {
@@ -26,9 +28,6 @@ interface PacingResponse {
   };
 }
 
-function money(cents: number) {
-  return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
 
 // >110% of expected pace = overspending, <90% = underspending, otherwise on track.
 function paceColor(pct: number | null) {
@@ -71,6 +70,7 @@ function ProgressBar({ pct }: { pct: number | null }) {
 // dashboard's own date-range picker — pacing only means something relative
 // to a real billing month, not an arbitrary rolling window.
 export default function BudgetPacingCard({ googleAdsAccountId }: { googleAdsAccountId: string }) {
+  const { money } = useI18n();
   const [data, setData] = useState<PacingResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

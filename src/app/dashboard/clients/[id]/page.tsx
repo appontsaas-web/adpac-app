@@ -13,6 +13,9 @@ import CampaignsList from './CampaignsList';
 import RecommendationsPanel from './RecommendationsPanel';
 import TargetingForm from './TargetingForm';
 import PortalContactForm from './PortalContactForm';
+import ClientLocaleForm from './ClientLocaleForm';
+import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
+import { getLocale } from '@/lib/i18n/server';
 import ReportingDashboard from './ReportingDashboard';
 import SummaryReportDashboard from './SummaryReportDashboard';
 import KeywordAdPerformanceCard from './KeywordAdPerformanceCard';
@@ -306,6 +309,13 @@ export default async function ClientPage({
           clientId={client.id}
           initialAdLanguage={client.adLanguage}
           initialTargetLocations={client.targetLocations}
+          readOnly={!canTargeting}
+        />
+
+        <ClientLocaleForm
+          clientId={client.id}
+          initialCurrency={client.displayCurrency}
+          initialPortalLocale={client.portalContactLocale}
           readOnly={!canTargeting}
         />
 
@@ -819,6 +829,7 @@ export default async function ClientPage({
   }
 
   return (
+    <LocaleProvider locale={getLocale()} currency={client.displayCurrency}>
     <div className="container-wide">
       <DashboardNav />
       <a href="/dashboard" style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>
@@ -923,5 +934,6 @@ export default async function ClientPage({
 
       <ClientDashboardTabs tabs={tabs} />
     </div>
+    </LocaleProvider>
   );
 }

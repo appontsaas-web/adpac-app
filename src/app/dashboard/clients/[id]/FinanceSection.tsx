@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import TokenBalanceCard from './TokenBalanceCard';
@@ -18,9 +20,6 @@ interface Invoice {
   requestedByUserId?: string | null;
 }
 
-function money(cents: number) {
-  return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 function todayISODate() {
   const d = new Date();
@@ -56,6 +55,7 @@ export default function FinanceSection({
   invoices: Invoice[];
   requesterNames?: Record<string, string>;
 }) {
+  const { moneyUsd: money, t } = useI18n();
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [amount, setAmount] = useState('');

@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
+
 import { useState, useEffect, useCallback } from 'react';
 
 interface KeywordRow {
@@ -76,9 +78,6 @@ const RANGES = [
   { label: '90d', days: 90 },
 ];
 
-function money(cents: number) {
-  return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 // Google's live per-asset serving status (asset_group_asset.primary_status —
 // see lib/googleAds.ts's fetchAssetGroupAssetPerformance doc comment for why
@@ -110,6 +109,7 @@ type Tab = (typeof TABS)[number];
 // rather than four separate cards since they're all "drill into why the
 // campaign total looks the way it does" views of the same underlying period.
 export default function KeywordAdPerformanceCard({ googleAdsAccountId }: { googleAdsAccountId: string }) {
+  const { money, num } = useI18n();
   const [tab, setTab] = useState<Tab>('Keywords');
   const [days, setDays] = useState(30);
   // A non-null customRange overrides `days` — added because the fixed
@@ -285,9 +285,9 @@ export default function KeywordAdPerformanceCard({ googleAdsAccountId }: { googl
                     <td style={{ padding: '8px 6px', color: 'var(--text-dim)', fontSize: '0.78rem' }}>{k.matchType}</td>
                     <td style={{ padding: '8px 6px', color: 'var(--text-dim)' }}>{k.adGroupName}</td>
                     <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(k.costCents)}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{k.clicks.toLocaleString()}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(k.clicks)}</td>
                     <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(k.avgCpcCents)}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{k.conversions.toLocaleString()}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(k.conversions)}</td>
                     <td style={{ padding: '8px 6px', textAlign: 'right' }}>{k.qualityScore ?? '—'}</td>
                   </tr>
                 ))}
@@ -318,8 +318,8 @@ export default function KeywordAdPerformanceCard({ googleAdsAccountId }: { googl
                     <td style={{ padding: '8px 6px' }}>{s.searchTerm}</td>
                     <td style={{ padding: '8px 6px', color: 'var(--text-dim)', fontSize: '0.78rem' }}>{s.matchType ?? '—'}</td>
                     <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(s.costCents)}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{s.clicks.toLocaleString()}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{s.conversions.toLocaleString()}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(s.clicks)}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(s.conversions)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -348,9 +348,9 @@ export default function KeywordAdPerformanceCard({ googleAdsAccountId }: { googl
                   <tr key={i} style={{ borderBottom: '1px solid var(--card-border)' }}>
                     <td style={{ padding: '8px 6px' }}>{g.adGroupName}</td>
                     <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(g.costCents)}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{g.clicks.toLocaleString()}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{g.impressions.toLocaleString()}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{g.conversions.toLocaleString()}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(g.clicks)}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(g.impressions)}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(g.conversions)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -386,9 +386,9 @@ export default function KeywordAdPerformanceCard({ googleAdsAccountId }: { googl
                           <td style={{ padding: '8px 6px' }}>{g.assetGroupName}</td>
                           <td style={{ padding: '8px 6px', color: 'var(--text-dim)', fontSize: '0.78rem' }}>{g.status}</td>
                           <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(g.costCents)}</td>
-                          <td style={{ padding: '8px 6px', textAlign: 'right' }}>{g.clicks.toLocaleString()}</td>
-                          <td style={{ padding: '8px 6px', textAlign: 'right' }}>{g.impressions.toLocaleString()}</td>
-                          <td style={{ padding: '8px 6px', textAlign: 'right' }}>{g.conversions.toLocaleString()}</td>
+                          <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(g.clicks)}</td>
+                          <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(g.impressions)}</td>
+                          <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(g.conversions)}</td>
                           <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(g.conversionValueCents)}</td>
                         </tr>
                       ))}
@@ -458,7 +458,7 @@ export default function KeywordAdPerformanceCard({ googleAdsAccountId }: { googl
                       {conversionCategories.map((c, i) => (
                         <tr key={i} style={{ borderBottom: '1px solid var(--card-border)' }}>
                           <td style={{ padding: '8px 6px' }}>{c.value.replaceAll('_', ' ').toLowerCase()}</td>
-                          <td style={{ padding: '8px 6px', textAlign: 'right' }}>{c.conversions.toLocaleString()}</td>
+                          <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(c.conversions)}</td>
                           <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(c.conversionValueCents)}</td>
                         </tr>
                       ))}
@@ -483,7 +483,7 @@ export default function KeywordAdPerformanceCard({ googleAdsAccountId }: { googl
                       {conversionActions.map((c, i) => (
                         <tr key={i} style={{ borderBottom: '1px solid var(--card-border)' }}>
                           <td style={{ padding: '8px 6px' }}>{c.value}</td>
-                          <td style={{ padding: '8px 6px', textAlign: 'right' }}>{c.conversions.toLocaleString()}</td>
+                          <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(c.conversions)}</td>
                           <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(c.conversionValueCents)}</td>
                         </tr>
                       ))}
@@ -517,8 +517,8 @@ export default function KeywordAdPerformanceCard({ googleAdsAccountId }: { googl
                     <td style={{ padding: '8px 6px' }}>{a.headline}</td>
                     <td style={{ padding: '8px 6px', color: 'var(--text-dim)', fontSize: '0.78rem' }}>{a.status}</td>
                     <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(a.costCents)}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{a.clicks.toLocaleString()}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{a.conversions.toLocaleString()}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(a.clicks)}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(a.conversions)}</td>
                   </tr>
                 ))}
               </tbody>

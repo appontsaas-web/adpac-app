@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
+
 import { useState, useEffect, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -88,9 +90,6 @@ const COMPARE_OPTIONS: { mode: CompareMode; label: string }[] = [
   { mode: 'custom', label: 'Custom' },
 ];
 
-function money(cents: number) {
-  return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 function fmtDate(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -111,6 +110,7 @@ export default function ReportingDashboard({
   googleAdsAccountId: string;
   isAdmin?: boolean;
 }) {
+  const { money, t, num } = useI18n();
   const [days, setDays] = useState(30);
   // A non-null customRange overrides `days` everywhere below — set by
   // typing dates and clicking Apply, cleared by picking a preset button.
@@ -646,40 +646,40 @@ export default function ReportingDashboard({
               marginBottom: 20,
             }}
           >
-            {!hiddenMetrics.has('spend') && <KpiCard label="Spend" value={money(data.totals.costCents)} delta={compareTotals && pctChange(data.totals.costCents, compareTotals.costCents)} />}
-            {!hiddenMetrics.has('clicks') && <KpiCard label="Clicks" value={data.totals.clicks.toLocaleString()} delta={compareTotals && pctChange(data.totals.clicks, compareTotals.clicks)} />}
-            {!hiddenMetrics.has('impressions') && <KpiCard label="Impressions" value={data.totals.impressions.toLocaleString()} delta={compareTotals && pctChange(data.totals.impressions, compareTotals.impressions)} />}
-            {!hiddenMetrics.has('ctr') && <KpiCard label="CTR" value={`${(data.totals.ctr * 100).toFixed(2)}%`} delta={compareTotals && pctChange(data.totals.ctr, compareTotals.ctr)} />}
-            {!hiddenMetrics.has('avgCpc') && <KpiCard label="Avg. CPC" value={money(data.totals.avgCpcCents)} delta={compareTotals && pctChange(data.totals.avgCpcCents, compareTotals.avgCpcCents)} />}
-            {!hiddenMetrics.has('conversions') && <KpiCard label="Conversions" value={data.totals.conversions.toLocaleString()} delta={compareTotals && pctChange(data.totals.conversions, compareTotals.conversions)} />}
+            {!hiddenMetrics.has('spend') && <KpiCard label={t('metrics.spend')} value={money(data.totals.costCents)} delta={compareTotals && pctChange(data.totals.costCents, compareTotals.costCents)} />}
+            {!hiddenMetrics.has('clicks') && <KpiCard label={t('metrics.clicks')} value={num(data.totals.clicks)} delta={compareTotals && pctChange(data.totals.clicks, compareTotals.clicks)} />}
+            {!hiddenMetrics.has('impressions') && <KpiCard label={t('metrics.impressions')} value={num(data.totals.impressions)} delta={compareTotals && pctChange(data.totals.impressions, compareTotals.impressions)} />}
+            {!hiddenMetrics.has('ctr') && <KpiCard label={t('metrics.ctr')} value={`${(data.totals.ctr * 100).toFixed(2)}%`} delta={compareTotals && pctChange(data.totals.ctr, compareTotals.ctr)} />}
+            {!hiddenMetrics.has('avgCpc') && <KpiCard label={t('metrics.avgCpc')} value={money(data.totals.avgCpcCents)} delta={compareTotals && pctChange(data.totals.avgCpcCents, compareTotals.avgCpcCents)} />}
+            {!hiddenMetrics.has('conversions') && <KpiCard label={t('metrics.conversions')} value={num(data.totals.conversions)} delta={compareTotals && pctChange(data.totals.conversions, compareTotals.conversions)} />}
             {!hiddenMetrics.has('costPerConversion') && (
               <KpiCard
-                label="Cost / conversion"
+                label={t('metrics.costPerConversion')}
                 value={data.totals.conversions > 0 ? money(data.totals.costPerConversionCents) : '—'}
                 delta={compareTotals && pctChange(data.totals.costPerConversionCents, compareTotals.costPerConversionCents)}
               />
             )}
-            {!hiddenMetrics.has('conversionValue') && <KpiCard label="Conversion value" value={money(data.totals.conversionValueCents)} delta={compareTotals && pctChange(data.totals.conversionValueCents, compareTotals.conversionValueCents)} />}
-            {!hiddenMetrics.has('roas') && <KpiCard label="ROAS" value={data.totals.costCents > 0 ? `${data.totals.roas.toFixed(2)}x` : '—'} delta={compareTotals && pctChange(data.totals.roas, compareTotals.roas)} />}
-            {!hiddenMetrics.has('purchases') && <KpiCard label="Purchases" value={data.totals.purchases.toLocaleString()} delta={compareTotals && pctChange(data.totals.purchases, compareTotals.purchases)} />}
-            {!hiddenMetrics.has('storeVisits') && <KpiCard label="Store visits" value={data.totals.storeVisits.toLocaleString()} delta={compareTotals && pctChange(data.totals.storeVisits, compareTotals.storeVisits)} />}
-            {!hiddenMetrics.has('mapClicks') && <KpiCard label="Map clicks" value={data.totals.mapClicks.toLocaleString()} delta={compareTotals && pctChange(data.totals.mapClicks, compareTotals.mapClicks)} />}
-            {!hiddenMetrics.has('localActionsDirections') && <KpiCard label="Local actions - Directions" value={data.totals.localActionsDirections.toLocaleString()} delta={compareTotals && pctChange(data.totals.localActionsDirections, compareTotals.localActionsDirections)} />}
-            {!hiddenMetrics.has('businessProfileDirections') && <KpiCard label="Business profile - Directions" value={data.totals.businessProfileDirections.toLocaleString()} delta={compareTotals && pctChange(data.totals.businessProfileDirections, compareTotals.businessProfileDirections)} />}
+            {!hiddenMetrics.has('conversionValue') && <KpiCard label={t('metrics.conversionValue')} value={money(data.totals.conversionValueCents)} delta={compareTotals && pctChange(data.totals.conversionValueCents, compareTotals.conversionValueCents)} />}
+            {!hiddenMetrics.has('roas') && <KpiCard label={t('metrics.roas')} value={data.totals.costCents > 0 ? `${data.totals.roas.toFixed(2)}x` : '—'} delta={compareTotals && pctChange(data.totals.roas, compareTotals.roas)} />}
+            {!hiddenMetrics.has('purchases') && <KpiCard label={t('metrics.purchases')} value={num(data.totals.purchases)} delta={compareTotals && pctChange(data.totals.purchases, compareTotals.purchases)} />}
+            {!hiddenMetrics.has('storeVisits') && <KpiCard label={t('metrics.storeVisits')} value={num(data.totals.storeVisits)} delta={compareTotals && pctChange(data.totals.storeVisits, compareTotals.storeVisits)} />}
+            {!hiddenMetrics.has('mapClicks') && <KpiCard label={t('metrics.mapClicks')} value={num(data.totals.mapClicks)} delta={compareTotals && pctChange(data.totals.mapClicks, compareTotals.mapClicks)} />}
+            {!hiddenMetrics.has('localActionsDirections') && <KpiCard label={t('metrics.localActionsDirections')} value={num(data.totals.localActionsDirections)} delta={compareTotals && pctChange(data.totals.localActionsDirections, compareTotals.localActionsDirections)} />}
+            {!hiddenMetrics.has('businessProfileDirections') && <KpiCard label={t('metrics.businessProfileDirections')} value={num(data.totals.businessProfileDirections)} delta={compareTotals && pctChange(data.totals.businessProfileDirections, compareTotals.businessProfileDirections)} />}
             {!hiddenMetrics.has('searchImpressionShare') && data.totals.avgSearchImpressionSharePct !== null && (
-              <KpiCard label="Search impr. share" value={`${data.totals.avgSearchImpressionSharePct.toFixed(1)}%`} />
+              <KpiCard label={t('metrics.searchImpressionShare')} value={`${data.totals.avgSearchImpressionSharePct.toFixed(1)}%`} />
             )}
             {!hiddenMetrics.has('budgetLostShare') && data.totals.avgSearchBudgetLostSharePct !== null && (
-              <KpiCard label="Impr. share lost (budget)" value={`${data.totals.avgSearchBudgetLostSharePct.toFixed(1)}%`} />
+              <KpiCard label={t('metrics.budgetLostShare')} value={`${data.totals.avgSearchBudgetLostSharePct.toFixed(1)}%`} />
             )}
             {!hiddenMetrics.has('rankLostShare') && data.totals.avgSearchRankLostSharePct !== null && (
-              <KpiCard label="Impr. share lost (rank)" value={`${data.totals.avgSearchRankLostSharePct.toFixed(1)}%`} />
+              <KpiCard label={t('metrics.rankLostShare')} value={`${data.totals.avgSearchRankLostSharePct.toFixed(1)}%`} />
             )}
             {!hiddenMetrics.has('topImpressionRate') && data.totals.avgSearchTopImpressionSharePct !== null && (
-              <KpiCard label="Top of page rate" value={`${data.totals.avgSearchTopImpressionSharePct.toFixed(1)}%`} />
+              <KpiCard label={t('metrics.topImpressionRate')} value={`${data.totals.avgSearchTopImpressionSharePct.toFixed(1)}%`} />
             )}
             {!hiddenMetrics.has('absTopImpressionRate') && data.totals.avgSearchAbsoluteTopImpressionSharePct !== null && (
-              <KpiCard label="Abs. top of page rate" value={`${data.totals.avgSearchAbsoluteTopImpressionSharePct.toFixed(1)}%`} />
+              <KpiCard label={t('metrics.absTopImpressionRate')} value={`${data.totals.avgSearchAbsoluteTopImpressionSharePct.toFixed(1)}%`} />
             )}
           </div>
 
@@ -731,9 +731,9 @@ export default function ReportingDashboard({
                         {c.biddingStrategyType ? c.biddingStrategyType.replaceAll('_', ' ').toLowerCase() : '—'}
                       </td>
                       <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(c.costCents)}</td>
-                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{c.clicks.toLocaleString()}</td>
-                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{c.impressions.toLocaleString()}</td>
-                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{c.conversions.toLocaleString()}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(c.clicks)}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(c.impressions)}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(c.conversions)}</td>
                       {isAdmin && (
                         <td style={{ padding: '8px 6px', textAlign: 'right' }}>
                           <button
@@ -814,6 +814,7 @@ function AudienceTable({
   // just the top-6-by-cost like every other breakdown would scramble that.
   sortByCost?: boolean;
 }) {
+  const { money, num } = useI18n();
   const top = sortByCost ? buckets.slice(0, 6) : buckets;
   return (
     <div style={{ background: 'var(--bg-alt)', border: '1px solid var(--card-border)', borderRadius: 10, padding: 12 }}>
@@ -828,7 +829,7 @@ function AudienceTable({
                 <td style={{ padding: '3px 0', color: 'var(--text-dim)' }}>{prettifyLabel(b.value)}</td>
                 <td style={{ padding: '3px 0', textAlign: 'right' }}>{money(b.costCents)}</td>
                 <td style={{ padding: '3px 0', textAlign: 'right', color: 'var(--text-dim)' }}>
-                  {b.conversions.toLocaleString()} conv.
+                  {num(b.conversions)} conv.
                 </td>
               </tr>
             ))}

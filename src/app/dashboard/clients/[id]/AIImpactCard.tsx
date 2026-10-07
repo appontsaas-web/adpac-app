@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
+
 import { useState, useEffect, useCallback } from 'react';
 
 interface MonthRow {
@@ -16,9 +18,6 @@ interface ImpactResponse {
   months: MonthRow[];
 }
 
-function money(cents: number) {
-  return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 function fmtTokens(n: number) {
   return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
@@ -31,6 +30,7 @@ function fmtTokens(n: number) {
 // current month — broken down by calendar month so months can be compared
 // side by side.
 export default function AIImpactCard({ clientId, isAdmin }: { clientId: string; isAdmin?: boolean }) {
+  const { moneyUsd: money } = useI18n();
   const [data, setData] = useState<ImpactResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

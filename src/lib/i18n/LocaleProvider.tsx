@@ -35,8 +35,10 @@ export function useI18n() {
       locale,
       currency,
       dir: locale === 'ar' ? ('rtl' as const) : ('ltr' as const),
-      t: (key: MessageKey) => translate(locale, key),
+      t: (key: MessageKey, vars?: Record<string, string | number>) => translate(locale, key, vars),
       money: (usdCents: number) => formatMoney(usdCents, locale, currency),
+      /** Always USD — for AdPac's own billing (invoices, tokens), which is priced in USD regardless of the client's display currency. */
+      moneyUsd: (usdCents: number) => formatMoney(usdCents, locale, 'USD'),
       num: (n: number, maxFractionDigits = 0) => formatNumber(n, locale, maxFractionDigits),
       pct: (fraction: number, digits = 2) => formatPercent(fraction, locale, digits),
       date: (d: Date | string) => formatDate(d, locale),

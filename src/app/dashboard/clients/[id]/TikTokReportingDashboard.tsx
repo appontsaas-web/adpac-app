@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
+
 import { useState, useEffect, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -61,9 +63,6 @@ const COMPARE_OPTIONS: { mode: CompareMode; label: string }[] = [
   { mode: 'custom', label: 'Custom' },
 ];
 
-function money(cents: number) {
-  return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 function fmtDate(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -87,6 +86,7 @@ export default function TikTokReportingDashboard({
   tiktokAdAccountId: string;
   isAdmin?: boolean;
 }) {
+  const { money, t, num } = useI18n();
   const [days, setDays] = useState(30);
   const [customRange, setCustomRange] = useState<{ since: string; until: string } | null>(null);
   const [sinceInput, setSinceInput] = useState(() => {
@@ -427,21 +427,21 @@ export default function TikTokReportingDashboard({
       {data && data.daily.length > 0 && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: 20 }}>
-            {!hiddenMetrics.has('spend') && <KpiCard label="Spend" value={money(data.totals.costCents)} delta={compareTotals && pctChange(data.totals.costCents, compareTotals.costCents)} />}
-            {!hiddenMetrics.has('clicks') && <KpiCard label="Clicks" value={data.totals.clicks.toLocaleString()} delta={compareTotals && pctChange(data.totals.clicks, compareTotals.clicks)} />}
-            {!hiddenMetrics.has('impressions') && <KpiCard label="Impressions" value={data.totals.impressions.toLocaleString()} delta={compareTotals && pctChange(data.totals.impressions, compareTotals.impressions)} />}
-            {!hiddenMetrics.has('ctr') && <KpiCard label="CTR" value={`${(data.totals.ctr * 100).toFixed(2)}%`} delta={compareTotals && pctChange(data.totals.ctr, compareTotals.ctr)} />}
-            {!hiddenMetrics.has('avgCpc') && <KpiCard label="Avg. CPC" value={money(data.totals.avgCpcCents)} delta={compareTotals && pctChange(data.totals.avgCpcCents, compareTotals.avgCpcCents)} />}
-            {!hiddenMetrics.has('conversions') && <KpiCard label="Conversions" value={data.totals.conversions.toLocaleString()} delta={compareTotals && pctChange(data.totals.conversions, compareTotals.conversions)} />}
+            {!hiddenMetrics.has('spend') && <KpiCard label={t('metrics.spend')} value={money(data.totals.costCents)} delta={compareTotals && pctChange(data.totals.costCents, compareTotals.costCents)} />}
+            {!hiddenMetrics.has('clicks') && <KpiCard label={t('metrics.clicks')} value={num(data.totals.clicks)} delta={compareTotals && pctChange(data.totals.clicks, compareTotals.clicks)} />}
+            {!hiddenMetrics.has('impressions') && <KpiCard label={t('metrics.impressions')} value={num(data.totals.impressions)} delta={compareTotals && pctChange(data.totals.impressions, compareTotals.impressions)} />}
+            {!hiddenMetrics.has('ctr') && <KpiCard label={t('metrics.ctr')} value={`${(data.totals.ctr * 100).toFixed(2)}%`} delta={compareTotals && pctChange(data.totals.ctr, compareTotals.ctr)} />}
+            {!hiddenMetrics.has('avgCpc') && <KpiCard label={t('metrics.avgCpc')} value={money(data.totals.avgCpcCents)} delta={compareTotals && pctChange(data.totals.avgCpcCents, compareTotals.avgCpcCents)} />}
+            {!hiddenMetrics.has('conversions') && <KpiCard label={t('metrics.conversions')} value={num(data.totals.conversions)} delta={compareTotals && pctChange(data.totals.conversions, compareTotals.conversions)} />}
             {!hiddenMetrics.has('costPerConversion') && (
               <KpiCard
-                label="Cost / conversion"
+                label={t('metrics.costPerConversion')}
                 value={data.totals.conversions > 0 ? money(data.totals.costPerConversionCents) : '—'}
                 delta={compareTotals && pctChange(data.totals.costPerConversionCents, compareTotals.costPerConversionCents)}
               />
             )}
-            {!hiddenMetrics.has('conversionValue') && <KpiCard label="Conversion value" value={money(data.totals.conversionValueCents)} delta={compareTotals && pctChange(data.totals.conversionValueCents, compareTotals.conversionValueCents)} />}
-            {!hiddenMetrics.has('roas') && <KpiCard label="ROAS" value={data.totals.costCents > 0 ? `${data.totals.roas.toFixed(2)}x` : '—'} delta={compareTotals && pctChange(data.totals.roas, compareTotals.roas)} />}
+            {!hiddenMetrics.has('conversionValue') && <KpiCard label={t('metrics.conversionValue')} value={money(data.totals.conversionValueCents)} delta={compareTotals && pctChange(data.totals.conversionValueCents, compareTotals.conversionValueCents)} />}
+            {!hiddenMetrics.has('roas') && <KpiCard label={t('metrics.roas')} value={data.totals.costCents > 0 ? `${data.totals.roas.toFixed(2)}x` : '—'} delta={compareTotals && pctChange(data.totals.roas, compareTotals.roas)} />}
           </div>
 
           <ResponsiveContainer width="100%" height={240}>
@@ -486,9 +486,9 @@ export default function TikTokReportingDashboard({
                       <td style={{ padding: '8px 6px', color: 'var(--text-dim)', fontSize: '0.78rem' }}>{c.objective.replaceAll('_', ' ').toLowerCase()}</td>
                       <td style={{ padding: '8px 6px', textAlign: 'right' }}>{c.dailyBudgetCents != null ? money(c.dailyBudgetCents) : '—'}</td>
                       <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(c.costCents)}</td>
-                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{c.clicks.toLocaleString()}</td>
-                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{c.impressions.toLocaleString()}</td>
-                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{c.conversions.toLocaleString()}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(c.clicks)}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(c.impressions)}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{num(c.conversions)}</td>
                       {isAdmin && (
                         <td style={{ padding: '8px 6px', textAlign: 'right' }}>
                           <button

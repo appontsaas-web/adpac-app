@@ -10,5 +10,5 @@ export function getLocale(): Locale {
 
 /** Server-component translator: const t = getT(); t('common.clients'). */
 export function getT(locale: Locale = getLocale()) {
-  return (key: MessageKey) => translate(locale, key);
+  return (key: MessageKey, vars?: Record<string, string | number>) => translate(locale, key, vars);
 }

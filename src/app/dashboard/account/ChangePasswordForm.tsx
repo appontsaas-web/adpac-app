@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 
 // Self-service password change for the signed-in user (admin or staff).
 // Requires the current password — unlike the admin "Reset password" action
 // on the Team page, which sets a new password for someone else without
 // knowing their old one.
 export default function ChangePasswordForm() {
+  const { t } = useI18n();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -20,11 +22,11 @@ export default function ChangePasswordForm() {
     setDone(false);
 
     if (newPassword.length < 8) {
-      setError('New password must be at least 8 characters');
+      setError(t('account.tooShort'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setError("New passwords don't match");
+      setError(t('account.mismatch'));
       return;
     }
 
@@ -37,7 +39,7 @@ export default function ChangePasswordForm() {
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to change password');
+        setError(d.error ?? t('account.failed'));
         return;
       }
       setCurrentPassword('');
@@ -45,7 +47,7 @@ export default function ChangePasswordForm() {
       setConfirmPassword('');
       setDone(true);
     } catch (err: any) {
-      setError(err.message ?? 'Failed to change password — network error');
+      setError(err.message ?? t('account.networkFailed'));
     } finally {
       setSaving(false);
     }
@@ -53,18 +55,18 @@ export default function ChangePasswordForm() {
 
   return (
     <div className="card" style={{ maxWidth: 420 }}>
-      <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>Change password</h2>
+      <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>{t('account.changePassword')}</h2>
       <form onSubmit={handleSubmit}>
-        <label>Current password</label>
+        <label>{t('account.currentPassword')}</label>
         <input
           type="password"
           required
           value={currentPassword}
           onChange={(e) => setCurrentPassword(e.target.value)}
         />
-        <label>New password (8+ characters)</label>
+        <label>{t('account.newPassword')}</label>
         <input type="password" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-        <label>Confirm new password</label>
+        <label>{t('account.confirmPassword')}</label>
         <input
           type="password"
           required
@@ -72,9 +74,9 @@ export default function ChangePasswordForm() {
           onChange={(e) => setConfirmPassword(e.target.value)}
         />
         {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginTop: 8 }}>{error}</p>}
-        {done && <p style={{ color: 'var(--accent2)', fontSize: '0.82rem', marginTop: 8 }}>Password changed.</p>}
+        {done && <p style={{ color: 'var(--accent2)', fontSize: '0.82rem', marginTop: 8 }}>{t('account.changed')}</p>}
         <button className="btn" type="submit" disabled={saving} style={{ marginTop: 12 }}>
-          {saving ? 'Saving…' : 'Save new password'}
+          {saving ? t('account.saving') : t('account.saveNew')}
         </button>
       </form>
     </div>

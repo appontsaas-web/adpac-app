@@ -67,6 +67,69 @@ const en = {
     cpm: 'CPM',
     avgDailyReach: 'Avg. daily reach',
   },
+  auth: {
+    signInTitle: 'AdPac Sign In',
+    email: 'Email',
+    password: 'Password',
+    signIn: 'Sign in',
+    signingIn: 'Signing in…',
+    invalid: 'Invalid email or password.',
+    noAccount: 'No account yet? Run `npm run db:seed` to create the first admin user — see README.',
+  },
+  home: {
+    title: 'Clients',
+    rechargePending: '{n} recharge request(s) pending',
+    rechargePendingShort: '{n} recharge pending',
+    noClientsAdmin: 'No clients yet — add one above to get started.',
+    noClientsStaff: "You haven't been assigned to any clients yet.",
+    noIndustry: 'No industry set',
+    gadsConnected: 'Google Ads connected',
+    notConnected: 'Not connected',
+    campaignCount: '{n} campaign(s)',
+    view: 'View →',
+  },
+  account: {
+    title: 'Account',
+    signedInAs: 'Signed in as {name} ({email}) · {role}',
+    changePassword: 'Change password',
+    currentPassword: 'Current password',
+    newPassword: 'New password (8+ characters)',
+    confirmPassword: 'Confirm new password',
+    saveNew: 'Save new password',
+    saving: 'Saving…',
+    changed: 'Password changed.',
+    tooShort: 'New password must be at least 8 characters',
+    mismatch: "New passwords don't match",
+    failed: 'Failed to change password',
+    networkFailed: 'Failed to change password — network error',
+  },
+  newClient: {
+    add: '+ Add client',
+    businessName: 'Business name*',
+    website: 'Website',
+    industry: 'Industry',
+    monthlyBudget: 'Monthly budget (USD)',
+    primaryGoal: 'Primary goal',
+    goalLeads: 'Generate leads',
+    goalSales: 'Drive sales / revenue',
+    goalAwareness: 'Brand awareness',
+    goalTraffic: 'Website traffic',
+    adLanguage: 'Ad language',
+    targetLocations: 'Target locations',
+    targetPlaceholder: 'e.g. Lebanon, UAE, Saudi Arabia',
+    save: 'Save client',
+    saving: 'Saving…',
+    failed: 'Failed to create client',
+    networkFailed: 'Failed to create client — network error',
+  },
+  clientLocale: {
+    title: 'Language & currency',
+    help: 'Money on this client\'s screens is shown in the currency below (amounts are stored in USD and converted at display time; invoices and tokens always stay in USD). Portal language applies to the client portal and emails.',
+    currency: 'Display currency',
+    portalLanguage: 'Client portal language',
+    saved: 'Saved.',
+    failed: 'Save failed',
+  },
 };
 
 type Dict = typeof en;
@@ -132,13 +195,84 @@ const ar: Dict = {
     cpm: 'تكلفة الألف ظهور (CPM)',
     avgDailyReach: 'متوسط الوصول اليومي (Avg. daily reach)',
   },
+  auth: {
+    signInTitle: 'تسجيل الدخول إلى AdPac',
+    email: 'البريد الإلكتروني',
+    password: 'كلمة المرور',
+    signIn: 'تسجيل الدخول',
+    signingIn: 'جارٍ تسجيل الدخول…',
+    invalid: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+    noAccount: 'ليس لديك حساب؟ شغّل `npm run db:seed` لإنشاء أول مستخدم مسؤول — راجع README.',
+  },
+  home: {
+    title: 'العملاء',
+    rechargePending: '{n} طلب(ات) شحن قيد الانتظار',
+    rechargePendingShort: '{n} شحن قيد الانتظار',
+    noClientsAdmin: 'لا يوجد عملاء بعد — أضف عميلاً من الأعلى للبدء.',
+    noClientsStaff: 'لم يتم تعيينك لأي عميل بعد.',
+    noIndustry: 'لم يتم تحديد المجال',
+    gadsConnected: 'Google Ads مرتبط',
+    notConnected: 'غير مرتبط',
+    campaignCount: '{n} حملة',
+    view: 'عرض ←',
+  },
+  account: {
+    title: 'الحساب',
+    signedInAs: 'مسجّل الدخول باسم {name} ({email}) · {role}',
+    changePassword: 'تغيير كلمة المرور',
+    currentPassword: 'كلمة المرور الحالية',
+    newPassword: 'كلمة المرور الجديدة (8 أحرف أو أكثر)',
+    confirmPassword: 'تأكيد كلمة المرور الجديدة',
+    saveNew: 'حفظ كلمة المرور الجديدة',
+    saving: 'جارٍ الحفظ…',
+    changed: 'تم تغيير كلمة المرور.',
+    tooShort: 'يجب أن تتكون كلمة المرور الجديدة من 8 أحرف على الأقل',
+    mismatch: 'كلمتا المرور الجديدتان غير متطابقتين',
+    failed: 'تعذّر تغيير كلمة المرور',
+    networkFailed: 'تعذّر تغيير كلمة المرور — خطأ في الشبكة',
+  },
+  newClient: {
+    add: '+ إضافة عميل',
+    businessName: 'اسم النشاط التجاري*',
+    website: 'الموقع الإلكتروني',
+    industry: 'المجال',
+    monthlyBudget: 'الميزانية الشهرية (بالدولار)',
+    primaryGoal: 'الهدف الرئيسي',
+    goalLeads: 'جذب عملاء محتملين',
+    goalSales: 'زيادة المبيعات / الإيرادات',
+    goalAwareness: 'الوعي بالعلامة التجارية',
+    goalTraffic: 'زيارات الموقع',
+    adLanguage: 'لغة الإعلانات',
+    targetLocations: 'المواقع المستهدفة',
+    targetPlaceholder: 'مثال: لبنان، الإمارات، السعودية',
+    save: 'حفظ العميل',
+    saving: 'جارٍ الحفظ…',
+    failed: 'تعذّر إنشاء العميل',
+    networkFailed: 'تعذّر إنشاء العميل — خطأ في الشبكة',
+  },
+  clientLocale: {
+    title: 'اللغة والعملة',
+    help: 'تُعرض المبالغ في شاشات هذا العميل بالعملة المحددة أدناه (تُخزَّن المبالغ بالدولار وتُحوَّل عند العرض؛ أما الفواتير والرصيد فتبقى دائماً بالدولار). تنطبق لغة البوابة على بوابة العميل والرسائل الإلكترونية.',
+    currency: 'عملة العرض',
+    portalLanguage: 'لغة بوابة العميل',
+    saved: 'تم الحفظ.',
+    failed: 'تعذّر الحفظ',
+  },
 };
 
 export const MESSAGES: Record<Locale, Dict> = { en, ar };
-export type MessageKey = `common.${keyof Dict['common']}` | `metrics.${keyof Dict['metrics']}`;
 
-export function translate(locale: Locale, key: MessageKey): string {
+type Flatten<T> = {
+  [S in keyof T & string]: T[S] extends Record<string, string> ? `${S}.${keyof T[S] & string}` : never;
+}[keyof T & string];
+export type MessageKey = Flatten<Dict>;
+
+/** t('home.campaignCount', { n: 3 }) — {name} placeholders are substituted. */
+export function translate(locale: Locale, key: MessageKey, vars?: Record<string, string | number>): string {
   const [section, name] = key.split('.') as [keyof Dict, string];
   const dict = MESSAGES[locale] ?? MESSAGES.en;
-  return (dict[section] as Record<string, string>)[name] ?? (MESSAGES.en[section] as Record<string, string>)[name] ?? key;
+  let out =
+    (dict[section] as Record<string, string>)[name] ?? (MESSAGES.en[section] as Record<string, string>)[name] ?? key;
+  if (vars) for (const [k, v] of Object.entries(vars)) out = out.split(`{${k}}`).join(String(v));
+  return out;
 }

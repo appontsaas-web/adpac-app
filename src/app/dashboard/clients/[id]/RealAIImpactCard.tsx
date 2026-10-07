@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
+
 import { useState, useEffect, useCallback } from 'react';
 
 interface MonthRow {
@@ -17,10 +19,6 @@ interface RealImpactResponse {
   insightsUnmeasurable: number;
 }
 
-function money(cents: number) {
-  const sign = cents < 0 ? '-' : '';
-  return `${sign}$${(Math.abs(cents) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 // The real-measured counterpart to AIImpactCard — see lib/realImpact.ts for
 // the full methodology. Deliberately a SEPARATE card, not a replacement:
@@ -37,6 +35,8 @@ export default function RealAIImpactCard({
   isAdmin?: boolean;
   initialVisibleToStaff?: boolean;
 }) {
+  const { money: fmtMoney } = useI18n();
+  const money = (cents: number) => (cents < 0 ? `-${fmtMoney(-cents)}` : fmtMoney(cents));
   const [data, setData] = useState<RealImpactResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

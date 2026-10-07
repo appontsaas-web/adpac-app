@@ -4,10 +4,12 @@ import { db } from '@/lib/db';
 import { getCurrentUser } from '@/lib/access';
 import DashboardNav from './DashboardNav';
 import NewClientForm from './NewClientForm';
+import { getT } from '@/lib/i18n/server';
 
 export default async function DashboardPage() {
   const me = await getCurrentUser();
   if (!me) redirect('/login');
+  const t = getT();
 
   const clients = await db.client.findMany({
     where: me.role === 'ADMIN' ? undefined : { assignments: { some: { userId: me.id } } },
@@ -27,10 +29,10 @@ export default async function DashboardPage() {
     <div className="container">
       <DashboardNav />
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
-        <h1 style={{ fontSize: '1.6rem' }}>Clients</h1>
+        <h1 style={{ fontSize: '1.6rem' }}>{t('home.title')}</h1>
         {me.role === 'ADMIN' && totalPendingRequests > 0 && (
           <span className="badge badge-pending">
-            {totalPendingRequests} recharge request{totalPendingRequests === 1 ? '' : 's'} pending
+            {t('home.rechargePending', { n: totalPendingRequests })}
           </span>
         )}
       </div>
@@ -39,7 +41,7 @@ export default async function DashboardPage() {
 
       {clients.length === 0 && (
         <p style={{ color: 'var(--text-dim)' }}>
-          {me.role === 'ADMIN' ? 'No clients yet — add one above to get started.' : "You haven't been assigned to any clients yet."}
+          {me.role === 'ADMIN' ? t('home.noClientsAdmin') : t('home.noClientsStaff')}
         </p>
       )}
 
@@ -49,16 +51,16 @@ export default async function DashboardPage() {
             <div>
               <div style={{ fontWeight: 700 }}>{c.name}</div>
               <div style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>
-                {c.industry ?? 'No industry set'} ·{' '}
-                {c.googleAdsAccounts.length > 0 ? 'Google Ads connected' : 'Not connected'} ·{' '}
-                {c.campaigns.length} campaign{c.campaigns.length === 1 ? '' : 's'}
+                {c.industry ?? t('home.noIndustry')} ·{' '}
+                {c.googleAdsAccounts.length > 0 ? t('home.gadsConnected') : t('home.notConnected')} ·{' '}
+                {t('home.campaignCount', { n: c.campaigns.length })}
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {me.role === 'ADMIN' && c.invoices.length > 0 && (
-                <span className="badge badge-pending">{c.invoices.length} recharge pending</span>
+                <span className="badge badge-pending">{t('home.rechargePendingShort', { n: c.invoices.length })}</span>
               )}
-              <span className="badge badge-approved">View →</span>
+              <span className="badge badge-approved">{t('home.view')}</span>
             </div>
           </div>
         </Link>
