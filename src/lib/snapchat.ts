@@ -87,8 +87,18 @@ export async function exchangeCodeForTokens(code: string): Promise<SnapTokenResu
  * don't-rotate-what-you-store approach as lib/googleAds.ts's getAccessToken,
  * so callers only need the returned accessToken, not a new refresh token.
  */
+// Access tokens are cached in memory (keyed by refresh token) for 20 minutes.
+// Without this, a sync made one /token request PER CAMPAIGN (~500 for a big
+// account) and Snapchat rate-limited the token endpoint with HTTP 429 —
+// losing ~475 of 494 campaigns' stats. Snap access tokens live ~30 min.
+const TOKEN_CACHE_MS = 20 * 60 * 1000;
+const accessTokenCache = new Map<string, { token: string; expires: number }>();
+
 async function getAccessToken(refreshToken: string): Promise<string> {
+  const cached = accessTokenCache.get(refreshToken);
+  if (cached && cached.expires > Date.now()) return cached.token;
   const result = await tokenRequest({ grant_type: 'refresh_token', refresh_token: refreshToken });
+  accessTokenCache.set(refreshToken, { token: result.accessToken, expires: Date.now() + TOKEN_CACHE_MS });
   return result.accessToken;
 }
 
