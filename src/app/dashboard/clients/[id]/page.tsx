@@ -65,7 +65,14 @@ export default async function ClientPage({
   const access = await getClientAccess(me, params.id);
   if (!access) notFound();
   const isAdmin = me.role === 'ADMIN';
-  const [canCampaigns, canGoogleAds, canTargeting, canInvoices, canReporting, canTagManager, canBusinessProfile, canMeta, canSnapchat, canTikTok] = await Promise.all([
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  // Capability checks and the client record are independent — run them
+  // together instead of one after the other. Heavy relations are trimmed to
+  // what this page actually renders (invoices load separately, only for
+  // people who can see Finance; Business Profile keeps just the last 7 days
+  // of location metrics and the most recent reviews).
+  const [canCampaigns, canGoogleAds, canTargeting, canInvoices, canReporting, canTagManager, canBusinessProfile, canMeta, canSnapchat, canTikTok, client] = await Promise.all([
     hasCapability(me, params.id, 'campaigns'),
     hasCapability(me, params.id, 'googleAds'),
     hasCapability(me, params.id, 'targeting'),
@@ -76,23 +83,30 @@ export default async function ClientPage({
     hasCapability(me, params.id, 'meta'),
     hasCapability(me, params.id, 'snapchat'),
     hasCapability(me, params.id, 'tiktok'),
+    db.client.findUnique({
+      where: { id: params.id },
+      include: {
+        googleAdsAccounts: true,
+        analyticsProperties: true,
+        tagManagerContainers: true,
+        businessProfileAccounts: {
+          include: {
+            locations: {
+              include: {
+                metrics: { where: { date: { gte: sevenDaysAgo } } },
+                reviews: { orderBy: { createTime: 'desc' }, take: 50 },
+              },
+            },
+          },
+        },
+        metaAdAccounts: { include: { campaigns: { where: { hiddenFromList: false }, select: { id: true, name: true } } } },
+        snapAdAccounts: true,
+        tiktokAdAccounts: true,
+        campaigns: { orderBy: { createdAt: 'desc' } },
+        actionLogs: { orderBy: { createdAt: 'desc' }, take: 20 },
+      },
+    }),
   ]);
-
-  const client = await db.client.findUnique({
-    where: { id: params.id },
-    include: {
-      googleAdsAccounts: true,
-      analyticsProperties: true,
-      tagManagerContainers: true,
-      businessProfileAccounts: { include: { locations: { include: { metrics: true, reviews: true } } } },
-      metaAdAccounts: { include: { campaigns: { where: { hiddenFromList: false }, select: { id: true, name: true } } } },
-      snapAdAccounts: true,
-      tiktokAdAccounts: true,
-      campaigns: { orderBy: { createdAt: 'desc' } },
-      actionLogs: { orderBy: { createdAt: 'desc' }, take: 20 },
-      invoices: { orderBy: { issuedAt: 'desc' } },
-    },
-  });
   if (!client) notFound();
 
   const account = client.googleAdsAccounts[0] ?? null;
@@ -104,6 +118,41 @@ export default async function ClientPage({
   const tiktokAccount = client.tiktokAdAccounts[0] ?? null;
   const gtmDeployments = client.actionLogs.filter((l) => l.actionType === 'DEPLOY_GTM_TAG');
   const campaignNames = Object.fromEntries(client.campaigns.map((c) => [c.id, c.name]));
+
+  // Everything below is independent of each other, so fetch it all at once
+  // (this used to be ~8 sequential round trips to the database).
+  const BUSINESS_INSIGHT_TYPES = ['LOCATION_ANOMALY_ALERT', 'DRAFT_REVIEW_REPLY'];
+  const META_INSIGHT_TYPES = ['META_ADJUST_BUDGET', 'META_PAUSE_CAMPAIGN', 'META_ANOMALY_ALERT'];
+  const [businessInsightsRows, metaInsightsRows, aiInsightsRows, realImpactVisibleToStaffFlag, staffRows, assignmentRows, guardrailLogRow, invoiceRows] = await Promise.all([
+    gbpAccount
+      ? db.actionLog.findMany({ where: { clientId: client.id, actionType: { in: BUSINESS_INSIGHT_TYPES } }, orderBy: { createdAt: 'desc' }, take: 30 })
+      : Promise.resolve([]),
+    metaAccount
+      ? db.actionLog.findMany({ where: { clientId: client.id, actionType: { in: META_INSIGHT_TYPES } }, orderBy: { createdAt: 'desc' }, take: 30 })
+      : Promise.resolve([]),
+    db.actionLog.findMany({ where: { clientId: client.id, actionType: { in: AI_INSIGHT_TYPES } }, orderBy: { createdAt: 'desc' }, take: 30 }),
+    getRealImpactVisibleToStaff(),
+    isAdmin
+      ? db.user.findMany({ where: { role: 'STAFF' }, select: { id: true, email: true, name: true }, orderBy: { createdAt: 'asc' } })
+      : Promise.resolve([] as { id: string; email: string; name: string | null }[]),
+    isAdmin
+      ? db.clientAssignment.findMany({ where: { clientId: client.id }, select: { userId: true, permission: true } })
+      : Promise.resolve([] as { userId: string; permission: string }[]),
+    isAdmin
+      ? db.actionLog.findFirst({ where: { clientId: client.id, actionType: 'SPEND_GUARDRAIL_PAUSE' }, orderBy: { createdAt: 'desc' } })
+      : Promise.resolve(null),
+    canInvoices ? db.invoice.findMany({ where: { clientId: client.id }, orderBy: { issuedAt: 'desc' } }) : Promise.resolve([]),
+  ]);
+  const prefetched = {
+    businessInsights: businessInsightsRows,
+    metaInsights: metaInsightsRows,
+    aiInsights: aiInsightsRows,
+    realImpactVisibleToStaff: realImpactVisibleToStaffFlag,
+    staff: staffRows,
+    assignments: assignmentRows,
+    guardrailLog: guardrailLogRow,
+    invoices: invoiceRows,
+  };
 
   // Business Profile display data — flattened out of the nested include
   // above into the shapes BusinessProfileSection/BusinessInsightsPanel want.
@@ -124,8 +173,6 @@ export default async function ClientPage({
     errorMessage: string | null;
   }[] = [];
   if (gbpAccount) {
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     for (const loc of gbpAccount.locations) {
       locationNames[loc.id] = loc.title;
       const last7dMetrics = loc.metrics.filter((m) => m.date >= sevenDaysAgo);
@@ -159,12 +206,7 @@ export default async function ClientPage({
     }
     gbpReviews.sort((a, b) => new Date(b.createTime).getTime() - new Date(a.createTime).getTime());
 
-    const BUSINESS_INSIGHT_TYPES = ['LOCATION_ANOMALY_ALERT', 'DRAFT_REVIEW_REPLY'];
-    businessInsights = await db.actionLog.findMany({
-      where: { clientId: client.id, actionType: { in: BUSINESS_INSIGHT_TYPES } },
-      orderBy: { createdAt: 'desc' },
-      take: 30,
-    });
+    businessInsights = prefetched.businessInsights;
   }
 
   // Meta campaign-name lookup (for MetaInsightsPanel) + insights list —
@@ -185,12 +227,7 @@ export default async function ClientPage({
       metaCampaignNames[c.id] = c.name;
     }
 
-    const META_INSIGHT_TYPES = ['META_ADJUST_BUDGET', 'META_PAUSE_CAMPAIGN', 'META_ANOMALY_ALERT'];
-    metaInsights = await db.actionLog.findMany({
-      where: { clientId: client.id, actionType: { in: META_INSIGHT_TYPES } },
-      orderBy: { createdAt: 'desc' },
-      take: 30,
-    });
+    metaInsights = prefetched.metaInsights;
   }
 
   // Ad-account picker — only relevant right after an OAuth callback found
@@ -244,11 +281,7 @@ export default async function ClientPage({
   // mixes in every other action type — GTM deployments, campaign pushes,
   // etc.) so an approved AI insight doesn't silently scroll out of view just
   // because other, unrelated activity happened on the account afterward.
-  const aiInsights = await db.actionLog.findMany({
-    where: { clientId: client.id, actionType: { in: AI_INSIGHT_TYPES } },
-    orderBy: { createdAt: 'desc' },
-    take: 30,
-  });
+  const aiInsights = prefetched.aiInsights;
   // Live "did it actually work" numbers for anything already approved —
   // recomputed on every load from whatever DailyMetric rows have synced in
   // since it was applied, so this updates on its own as time passes.
@@ -261,15 +294,8 @@ export default async function ClientPage({
   let staff: { id: string; email: string; name: string | null }[] = [];
   let assignments: { userId: string; permission: string }[] = [];
   if (isAdmin) {
-    staff = await db.user.findMany({
-      where: { role: 'STAFF' },
-      select: { id: true, email: true, name: true },
-      orderBy: { createdAt: 'asc' },
-    });
-    assignments = await db.clientAssignment.findMany({
-      where: { clientId: client.id },
-      select: { userId: true, permission: true },
-    });
+    staff = prefetched.staff;
+    assignments = prefetched.assignments;
   }
 
   const pendingInsightCount = aiInsights.filter((l) => l.status === 'PENDING_APPROVAL').length;
@@ -277,17 +303,14 @@ export default async function ClientPage({
   // The beta "measured" AI impact card (RealAIImpactCard) is admin-only
   // until an admin explicitly approves it for staff — see lib/appSettings.ts.
   // Admins always see it (with the toggle to flip this for everyone else).
-  const realImpactVisibleToStaff = await getRealImpactVisibleToStaff();
+  const realImpactVisibleToStaff = prefetched.realImpactVisibleToStaff;
   const showRealImpactCard = isAdmin || realImpactVisibleToStaff;
 
   // Most recent time the spend-ceiling guardrail actually fired for this
   // client (if ever) — admin-only context shown on SpendGuardrailCard.
   let lastGuardrailTrigger: { summary: string; createdAt: string } | null = null;
   if (isAdmin) {
-    const log = await db.actionLog.findFirst({
-      where: { clientId: client.id, actionType: 'SPEND_GUARDRAIL_PAUSE' },
-      orderBy: { createdAt: 'desc' },
-    });
+    const log = prefetched.guardrailLog;
     if (log) {
       let summary = log.actionType;
       try {
@@ -778,11 +801,11 @@ export default async function ClientPage({
       content: isAdmin ? (
         <FinanceSection
           clientId={client.id}
-          invoices={client.invoices}
+          invoices={prefetched.invoices}
           requesterNames={Object.fromEntries(staff.map((s) => [s.id, s.name || s.email]))}
         />
       ) : (
-        <InvoicesViewOnly clientId={client.id} invoices={client.invoices} />
+        <InvoicesViewOnly clientId={client.id} invoices={prefetched.invoices} />
       ),
     });
   }

@@ -211,6 +211,8 @@ model ClientAssignment {
   createdAt  DateTime @default(now())
 
   @@unique([clientId, userId])
+
+  @@index([userId])
 }
 
 // A connected Google Ads account (OAuth) for a client
@@ -235,6 +237,8 @@ model GoogleAdsAccount {
   currencyCode           String?
 
   campaigns Campaign[]
+
+  @@index([clientId])
 }
 
 // A connected GA4 property for a client. Unlike Google Ads, GA4 has no
@@ -378,6 +382,8 @@ model MetaAdAccount {
   status                String   @default("connected") // connected | revoked | error
 
   campaigns MetaCampaign[]
+
+  @@index([clientId])
 }
 
 // A Meta ad campaign, imported from an already-existing campaign on the
@@ -532,6 +538,8 @@ model SnapAdAccount {
   timezone              String?  // Snap's own account timezone (e.g. "America/Los_Angeles") — stats are bucketed in this timezone, not UTC
 
   campaigns SnapCampaign[]
+
+  @@index([clientId])
 }
 
 // A Snapchat ad campaign, imported from an already-existing campaign on the
@@ -601,6 +609,8 @@ model TikTokAdAccount {
   timezone              String?  // TikTok's own advertiser timezone — stats are bucketed in this timezone, not UTC
 
   campaigns TikTokCampaign[]
+
+  @@index([clientId])
 }
 
 // A TikTok ad campaign, imported from an already-existing campaign on the
@@ -670,6 +680,9 @@ model Campaign {
   assetGroupMetrics AssetGroupMetric[]
   actionLogs       ActionLog[]
   creativeTests    CreativeTest[]
+
+  @@index([clientId])
+  @@index([googleAdsAccountId])
 }
 
 // Daily performance snapshot, pulled from the Google Ads API
@@ -888,6 +901,8 @@ model Invoice {
                                               // the usual way, which credits tokens as normal.
   requestedByUserId String? // set only when source is RECHARGE_REQUEST — who asked for it
   createdAt     DateTime  @default(now())
+
+  @@index([clientId, issuedAt])
 }
 
 // Every AI-proposed or AI-executed action — the audit trail.
@@ -939,6 +954,9 @@ model ActionLog {
   createdAt        DateTime  @default(now())
   executedAt       DateTime?
   errorMessage     String?
+
+  @@index([clientId, createdAt])
+  @@index([campaignId])
 }
 
 // Admin-defined override for a specific client+month's "AI optimization
@@ -1023,6 +1041,8 @@ model TokenTransaction {
   note            String?
   createdByUserId String?
   createdAt       DateTime @default(now())
+
+  @@index([clientId, createdAt])
 }
 
 // A running creative (ad copy) A/B test — two or more existing ads within

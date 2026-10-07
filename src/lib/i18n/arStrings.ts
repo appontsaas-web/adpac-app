@@ -629,7 +629,25 @@ export const AR_STRINGS: Record<string, string> = {
   "% of spend": "% من الإنفاق",
   "Total": "الإجمالي",
   "accounts": "حسابات",
-  "Spend by platform": "الإنفاق حسب المنصة"
+  "Spend by platform": "الإنفاق حسب المنصة",
+  "No platform connected": "لا توجد منصة مربوطة",
+  "A platform needs reconnecting": "إحدى المنصات تحتاج إلى إعادة الربط",
+  "{n} AI insight(s) awaiting approval": "{n} من رؤى الذكاء الاصطناعي بانتظار الموافقة",
+  "{n} recharge request(s) pending": "{n} من طلبات الشحن قيد الانتظار",
+  "Account validity expired": "انتهت صلاحية الحساب",
+  "Account validity ends in {n} day(s)": "تنتهي صلاحية الحساب خلال {n} يوم",
+  "Clients": "العملاء",
+  "Spend this month (USD, all platforms)": "الإنفاق هذا الشهر (USD، جميع المنصات)",
+  "AI insights awaiting approval": "رؤى الذكاء الاصطناعي بانتظار الموافقة",
+  "Clients needing attention": "عملاء يحتاجون إلى اهتمام",
+  "Search clients…": "ابحث عن العملاء…",
+  "Newest first": "الأحدث أولاً",
+  "Highest spend": "الأعلى إنفاقاً",
+  "Most issues": "الأكثر مشاكل",
+  "Needs attention": "يحتاج إلى اهتمام",
+  "No clients match.": "لا يوجد عملاء مطابقون.",
+  "Connected": "مربوط",
+  "This month": "هذا الشهر"
 };
 
 export function trString(locale: string, en: string, vars?: Record<string, string | number>): string {
