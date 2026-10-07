@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
   const platform = req.nextUrl.searchParams.get('platform');
   const state = (extra: object = {}) => JSON.stringify({ clientId: client.id, portal: true, ...extra });
 
+  try {
   switch (platform) {
     case 'google': {
       const customerId = (req.nextUrl.searchParams.get('customerId') ?? '').replace(/-/g, '').trim();
@@ -38,5 +39,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(getTikTokAuthUrl(state()));
     default:
       return NextResponse.json({ error: 'Unknown platform' }, { status: 400 });
+  }
+  } catch (err: any) {
+    // Most often a missing env var for that platform (META_APP_ID, TIKTOK_APP_ID...). Show it instead of a bare 500.
+    console.error(`Portal connect (${platform}) failed:`, err.message);
+    const friendly = String(err.message).startsWith('Missing required env var')
+      ? 'This platform is not available yet. Please choose another one or contact us.'
+      : 'Could not start the connection. Please try again.';
+    return NextResponse.redirect(absoluteUrl('/portal/analysis?message=' + encodeURIComponent(friendly)));
   }
 }
