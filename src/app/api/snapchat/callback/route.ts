@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { absoluteUrl } from '@/lib/baseUrl';
+import { absoluteUrl, connectDest } from '@/lib/baseUrl';
+import { getCurrentPortalClient } from '@/lib/clientPortalAuth';
 import { exchangeCodeForTokens, listOrgAdAccounts } from '@/lib/snapchat';
 import { encryptToken } from '@/lib/crypto';
 import { db } from '@/lib/db';
@@ -17,17 +18,25 @@ export async function GET(req: NextRequest) {
   const error = req.nextUrl.searchParams.get('error');
 
   let clientId: string | undefined;
+  let portal = false;
   try {
     if (stateRaw) {
       const parsed = JSON.parse(stateRaw);
       clientId = parsed.clientId;
+      portal = parsed.portal === true;
     }
   } catch {
     // fall through to the missing-fields check below
   }
 
+  if (portal) {
+    // Free Analysis flow: the connecting browser must hold the portal session of the client in `state`.
+    const pc = await getCurrentPortalClient();
+    if (!pc || pc.id !== clientId) return NextResponse.redirect(absoluteUrl('/portal?error=invalid-or-expired'));
+  }
+
   if (error) {
-    return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?snapchat=denied&tab=snapchat`));
+    return NextResponse.redirect(connectDest(portal, clientId, `snapchat=denied&tab=snapchat`));
   }
   if (!code || !clientId) {
     return NextResponse.json({ error: 'Missing code or state (clientId)' }, { status: 400 });
@@ -57,10 +66,10 @@ export async function GET(req: NextRequest) {
           status: 'connected',
         },
       });
-      return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?snapchat=connected&tab=snapchat`));
+      return NextResponse.redirect(connectDest(portal, clientId, `snapchat=connected&tab=snapchat`));
     }
 
-    const res = NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?snapchat=choose&tab=snapchat`));
+    const res = NextResponse.redirect(connectDest(portal, clientId, `snapchat=choose&tab=snapchat`));
     res.cookies.set(
       PENDING_SNAPCHAT_CONNECT_COOKIE,
       JSON.stringify({
@@ -81,7 +90,7 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     console.error('Snapchat OAuth callback failed:', err.message);
     return NextResponse.redirect(
-      absoluteUrl(`/dashboard/clients/${clientId}?snapchat=error&tab=snapchat&message=${encodeURIComponent(err.message)}`)
+      connectDest(portal, clientId, `snapchat=error&tab=snapchat&message=${encodeURIComponent(err.message)}`)
     );
   }
 }

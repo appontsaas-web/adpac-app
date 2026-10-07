@@ -37,6 +37,10 @@ export default async function PortalHomePage({ searchParams }: { searchParams: {
     );
   }
 
+  // Self-signed-up prospects only get the free analysis — no monthly form / plans.
+  const prospect = await db.client.findUnique({ where: { id: client.id }, select: { isFreeAnalysis: true } });
+  if (prospect?.isFreeAnalysis) redirect('/portal/analysis');
+
   const periodKey = currentPeriodKey();
   const thisMonthInput = await db.monthlyInput.findUnique({
     where: { clientId_periodKey: { clientId: client.id, periodKey } },

@@ -17,3 +17,13 @@ export function absoluteUrl(path: string): URL {
   const base = process.env.NEXTAUTH_URL ?? 'http://localhost:3010';
   return new URL(path, base);
 }
+
+/**
+ * Where an OAuth callback sends the user afterwards. Staff connects land on
+ * the dashboard client page; the Free Analysis flow (state.portal === true)
+ * lands back in the customer portal instead.
+ */
+export function connectDest(portal: boolean, clientId: string | undefined, qs: string): URL {
+  if (portal) return absoluteUrl(`/portal/analysis?${qs.replace(/&?tab=[a-z]+/, '')}`);
+  return absoluteUrl(`/dashboard/clients/${clientId}?${qs}`);
+}

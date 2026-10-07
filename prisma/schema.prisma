@@ -108,6 +108,8 @@ model Client {
   // email and can't sign in.
   portalContactLocale String @default("en") // language for the client's portal + emails: "en" | "ar"
   displayCurrency     String? // ISO code (SAR, AED...) clients see money in. Stored amounts stay USD cents; converted at display time (lib/currency.ts). Null = USD.
+  isFreeAnalysis     Boolean @default(false) // self-signed-up prospect: portal shows ONLY the 48h Free Analysis (lib/freeAnalysis.ts) until staff converts them
+  freeAnalysis       FreeAnalysis?
   portalContactName  String?
   portalContactEmail String?
   spendGuardrailEnabled Boolean @default(true)
@@ -1233,4 +1235,21 @@ model MarketingPlan {
   createdAt      DateTime  @default(now())
   sentToClientAt DateTime?
   respondedAt    DateTime?
+}
+
+// One-off free analysis + action plan for a prospect who connected ONE ad
+// account from the portal (see lib/freeAnalysis.ts). `content` is the JSON
+// report; it is only ever served while now < expiresAt (48h from
+// generatedAt) and is wiped from the DB once it has expired.
+model FreeAnalysis {
+  id          String    @id @default(cuid())
+  clientId    String    @unique
+  client      Client    @relation(fields: [clientId], references: [id])
+  platform    String?   // google | meta | snapchat | tiktok
+  status      String    @default("PENDING") // PENDING | GENERATING | READY | FAILED | EXPIRED
+  content     String?   // JSON report, null until READY and again after EXPIRED
+  error       String?
+  generatedAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
 }

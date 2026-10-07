@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { absoluteUrl } from '@/lib/baseUrl';
+import { absoluteUrl, connectDest } from '@/lib/baseUrl';
+import { getCurrentPortalClient } from '@/lib/clientPortalAuth';
 import { exchangeCodeForTokens, fetchAccountCurrency } from '@/lib/googleAds';
 import { encryptToken } from '@/lib/crypto';
 import { db } from '@/lib/db';
@@ -16,19 +17,27 @@ export async function GET(req: NextRequest) {
   const error = req.nextUrl.searchParams.get('error');
 
   let clientId: string | undefined;
+  let portal = false;
   let googleCustomerId: string | undefined;
   try {
     if (stateRaw) {
       const parsed = JSON.parse(stateRaw);
       clientId = parsed.clientId;
+      portal = parsed.portal === true;
       googleCustomerId = parsed.customerId;
     }
   } catch {
     // fall through to the missing-fields check below
   }
 
+  if (portal) {
+    // Free Analysis flow: the connecting browser must hold the portal session of the client in `state`.
+    const pc = await getCurrentPortalClient();
+    if (!pc || pc.id !== clientId) return NextResponse.redirect(absoluteUrl('/portal?error=invalid-or-expired'));
+  }
+
   if (error) {
-    return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?googleAds=denied`));
+    return NextResponse.redirect(connectDest(portal, clientId, `googleAds=denied`));
   }
   if (!code || !clientId || !googleCustomerId) {
     return NextResponse.json({ error: 'Missing code or state (clientId/customerId)' }, { status: 400 });
@@ -74,11 +83,11 @@ export async function GET(req: NextRequest) {
       data: { googleAdsAccountId: account.id },
     });
 
-    return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?googleAds=connected`));
+    return NextResponse.redirect(connectDest(portal, clientId, `googleAds=connected`));
   } catch (err: any) {
     console.error('Google Ads OAuth callback failed:', err.message);
     return NextResponse.redirect(
-      absoluteUrl(`/dashboard/clients/${clientId}?googleAds=error&message=${encodeURIComponent(err.message)}`)
+      connectDest(portal, clientId, `googleAds=error&message=${encodeURIComponent(err.message)}`)
     );
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { absoluteUrl } from '@/lib/baseUrl';
+import { absoluteUrl, connectDest } from '@/lib/baseUrl';
+import { getCurrentPortalClient } from '@/lib/clientPortalAuth';
 import { exchangeCodeForTokens, getAdvertiserInfo } from '@/lib/tiktok';
 import { encryptToken } from '@/lib/crypto';
 import { db } from '@/lib/db';
@@ -22,17 +23,25 @@ export async function GET(req: NextRequest) {
   const error = req.nextUrl.searchParams.get('error');
 
   let clientId: string | undefined;
+  let portal = false;
   try {
     if (stateRaw) {
       const parsed = JSON.parse(stateRaw);
       clientId = parsed.clientId;
+      portal = parsed.portal === true;
     }
   } catch {
     // fall through to the missing-fields check below
   }
 
+  if (portal) {
+    // Free Analysis flow: the connecting browser must hold the portal session of the client in `state`.
+    const pc = await getCurrentPortalClient();
+    if (!pc || pc.id !== clientId) return NextResponse.redirect(absoluteUrl('/portal?error=invalid-or-expired'));
+  }
+
   if (error) {
-    return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?tiktok=denied&tab=tiktok`));
+    return NextResponse.redirect(connectDest(portal, clientId, `tiktok=denied&tab=tiktok`));
   }
   if (!authCode || !clientId) {
     return NextResponse.json({ error: 'Missing auth_code or state (clientId)' }, { status: 400 });
@@ -60,10 +69,10 @@ export async function GET(req: NextRequest) {
           status: 'connected',
         },
       });
-      return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?tiktok=connected&tab=tiktok`));
+      return NextResponse.redirect(connectDest(portal, clientId, `tiktok=connected&tab=tiktok`));
     }
 
-    const res = NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?tiktok=choose&tab=tiktok`));
+    const res = NextResponse.redirect(connectDest(portal, clientId, `tiktok=choose&tab=tiktok`));
     res.cookies.set(
       PENDING_TIKTOK_CONNECT_COOKIE,
       JSON.stringify({
@@ -77,7 +86,7 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     console.error('TikTok OAuth callback failed:', err.message);
     return NextResponse.redirect(
-      absoluteUrl(`/dashboard/clients/${clientId}?tiktok=error&tab=tiktok&message=${encodeURIComponent(err.message)}`)
+      connectDest(portal, clientId, `tiktok=error&tab=tiktok&message=${encodeURIComponent(err.message)}`)
     );
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { absoluteUrl } from '@/lib/baseUrl';
+import { absoluteUrl, connectDest } from '@/lib/baseUrl';
+import { getCurrentPortalClient } from '@/lib/clientPortalAuth';
 import { exchangeCodeForToken, listAdAccounts } from '@/lib/meta';
 import { encryptToken } from '@/lib/crypto';
 import { db } from '@/lib/db';
@@ -28,17 +29,25 @@ export async function GET(req: NextRequest) {
   const error = req.nextUrl.searchParams.get('error');
 
   let clientId: string | undefined;
+  let portal = false;
   try {
     if (stateRaw) {
       const parsed = JSON.parse(stateRaw);
       clientId = parsed.clientId;
+      portal = parsed.portal === true;
     }
   } catch {
     // fall through to the missing-fields check below
   }
 
+  if (portal) {
+    // Free Analysis flow: the connecting browser must hold the portal session of the client in `state`.
+    const pc = await getCurrentPortalClient();
+    if (!pc || pc.id !== clientId) return NextResponse.redirect(absoluteUrl('/portal?error=invalid-or-expired'));
+  }
+
   if (error) {
-    return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?meta=denied&tab=meta`));
+    return NextResponse.redirect(connectDest(portal, clientId, `meta=denied&tab=meta`));
   }
   if (!code || !clientId) {
     return NextResponse.json({ error: 'Missing code or state (clientId)' }, { status: 400 });
@@ -67,13 +76,13 @@ export async function GET(req: NextRequest) {
           status: 'connected',
         },
       });
-      return NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?meta=connected&tab=meta`));
+      return NextResponse.redirect(connectDest(portal, clientId, `meta=connected&tab=meta`));
     }
 
     // Multiple ad accounts — stash everything needed to finish connecting
     // (already-encrypted token, so the cookie never holds it in plaintext)
     // and send the operator to the picker instead of guessing.
-    const res = NextResponse.redirect(absoluteUrl(`/dashboard/clients/${clientId}?meta=choose&tab=meta`));
+    const res = NextResponse.redirect(connectDest(portal, clientId, `meta=choose&tab=meta`));
     res.cookies.set(PENDING_META_CONNECT_COOKIE, JSON.stringify({
       clientId,
       accessTokenEncrypted: encryptToken(accessToken),
@@ -89,7 +98,7 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     console.error('Meta OAuth callback failed:', err.message);
     return NextResponse.redirect(
-      absoluteUrl(`/dashboard/clients/${clientId}?meta=error&tab=meta&message=${encodeURIComponent(err.message)}`)
+      connectDest(portal, clientId, `meta=error&tab=meta&message=${encodeURIComponent(err.message)}`)
     );
   }
 }
