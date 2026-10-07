@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 
 // Admin-only card for the hard spend-ceiling guardrail (see
 // lib/spendGuardrail.ts): auto-pauses every LIVE campaign for this client if
@@ -19,6 +20,7 @@ export default function SpendGuardrailCard({
   hasMonthlyBudget: boolean;
   lastTriggered: { summary: string; createdAt: string } | null;
 }) {
+  const { t } = useI18n();
   const [enabled, setEnabled] = useState(initialEnabled);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +37,7 @@ export default function SpendGuardrailCard({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? 'Failed to update');
+        throw new Error(data.error ?? t('cards.updateFailed'));
       }
       setEnabled(next);
     } catch (err: any) {
@@ -48,19 +50,15 @@ export default function SpendGuardrailCard({
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <h2 style={{ fontSize: '1.1rem' }}>Spend ceiling guardrail</h2>
-        <span className={`badge ${enabled ? 'badge-approved' : 'badge-draft'}`}>{enabled ? 'Enabled' : 'Disabled'}</span>
+        <h2 style={{ fontSize: '1.1rem' }}>{t('cards.guardrailTitle')}</h2>
+        <span className={`badge ${enabled ? 'badge-approved' : 'badge-draft'}`}>{enabled ? t('cards.enabled') : t('cards.disabled')}</span>
       </div>
       <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: 12 }}>
-        A hard safety net, independent of AI-approved changes: every sync cycle projects this client's
-        month-end spend from what's synced so far, and if it's on track to run 15%+ over their monthly
-        budget, every LIVE campaign is automatically paused — logged in the Activity tab, not silent.
-        Triggers at most once per calendar month, so resuming a campaign afterward won't immediately be
-        paused again.
+        {t('cards.guardrailHelp')}
       </p>
       {!hasMonthlyBudget && (
         <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem', marginBottom: 12 }}>
-          No monthly budget is set for this client — the guardrail has nothing to check against until one is.
+          {t('cards.guardrailNoBudget')}
         </p>
       )}
       {lastTriggered && (
@@ -73,14 +71,14 @@ export default function SpendGuardrailCard({
             fontSize: '0.82rem',
           }}
         >
-          <strong style={{ color: '#ef4444' }}>Last triggered:</strong> {lastTriggered.summary}
+          <strong style={{ color: '#ef4444' }}>{t('cards.lastTriggered')}</strong> {lastTriggered.summary}
           <div style={{ color: 'var(--text-dim)', marginTop: 4 }}>
             {new Date(lastTriggered.createdAt).toLocaleString()}
           </div>
         </div>
       )}
       <button className="btn btn-secondary" onClick={toggle} disabled={saving} style={{ fontSize: '0.8rem' }}>
-        {saving ? 'Saving…' : enabled ? 'Disable guardrail' : 'Enable guardrail'}
+        {saving ? t('common.loading') : enabled ? t('cards.disableGuardrail') : t('cards.enableGuardrail')}
       </button>
       {error && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: 8 }}>{error}</p>}
     </div>

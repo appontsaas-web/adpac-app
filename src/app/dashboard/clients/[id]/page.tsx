@@ -15,7 +15,8 @@ import TargetingForm from './TargetingForm';
 import PortalContactForm from './PortalContactForm';
 import ClientLocaleForm from './ClientLocaleForm';
 import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
-import { getLocale } from '@/lib/i18n/server';
+import { getLocale, getT } from '@/lib/i18n/server';
+import { formatMoney, formatDate } from '@/lib/i18n/format';
 import ReportingDashboard from './ReportingDashboard';
 import SummaryReportDashboard from './SummaryReportDashboard';
 import KeywordAdPerformanceCard from './KeywordAdPerformanceCard';
@@ -298,11 +299,13 @@ export default async function ClientPage({
     }
   }
 
+  const t = getT();
+  const locale = getLocale();
   const tabs: DashboardTab[] = [];
 
   tabs.push({
     id: 'overview',
-    label: 'Overview',
+    label: t('clientPage.tabOverview'),
     content: (
       <>
         <TargetingForm
@@ -327,17 +330,17 @@ export default async function ClientPage({
         />
 
         <div className="card">
-          <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>Google Ads connection</h2>
+          <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>{t('clientPage.gadsTitle')}</h2>
           {account ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <p style={{ margin: 0 }}>
-                Connected — customer ID <code>{account.googleCustomerId}</code>
+                {t('clientPage.connectedCustomer')} <code>{account.googleCustomerId}</code>
               </p>
               {canGoogleAds && (
                 <form action="/api/google-ads/disconnect" method="POST">
                   <input type="hidden" name="clientId" value={client.id} />
                   <button type="submit" className="btn btn-secondary" style={{ fontSize: '0.8rem' }}>
-                    Disconnect / relink
+                    {t('clientPage.disconnectRelink')}
                   </button>
                 </form>
               )}
@@ -345,13 +348,12 @@ export default async function ClientPage({
           ) : canGoogleAds ? (
             <>
               <p style={{ color: 'var(--text-dim)', marginBottom: 12 }}>
-                Not connected yet. Enter this client's Google Ads Customer ID (from the account you created for
-                them inside your AdPac Manager account) to connect it.
+                {t('clientPage.gadsHint')}
               </p>
               <ConnectGoogleAdsButton clientId={client.id} />
             </>
           ) : (
-            <p style={{ color: 'var(--text-dim)' }}>Not connected yet.</p>
+            <p style={{ color: 'var(--text-dim)' }}>{t('clientPage.notConnectedYet')}</p>
           )}
         </div>
 
@@ -370,7 +372,7 @@ export default async function ClientPage({
   if (canReporting) {
     tabs.push({
       id: 'summary',
-      label: 'Summary',
+      label: t('clientPage.tabSummary'),
       content: <SummaryReportDashboard clientId={client.id} />,
     });
   }
@@ -378,7 +380,7 @@ export default async function ClientPage({
   if (account && canReporting) {
     tabs.push({
       id: 'performance',
-      label: 'Performance',
+      label: t('clientPage.tabPerformance'),
       content: (
         <>
           <ReportingDashboard googleAdsAccountId={account.id} isAdmin={isAdmin} />
@@ -392,29 +394,28 @@ export default async function ClientPage({
   if (canReporting) {
     tabs.push({
       id: 'analytics',
-      label: 'Analytics',
+      label: t('clientPage.tabAnalytics'),
       content: (
         <>
           <div className="card">
-            <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>GA4 connection</h2>
+            <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>{t('clientPage.ga4Title')}</h2>
             {ga4Property ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <p style={{ margin: 0 }}>
-                  Connected — property ID <code>{ga4Property.ga4PropertyId}</code>
+                  {t('clientPage.connectedProperty')} <code>{ga4Property.ga4PropertyId}</code>
                 </p>
                 <form action="/api/google-analytics/disconnect" method="POST">
                   <input type="hidden" name="clientId" value={client.id} />
                   <button type="submit" className="btn btn-secondary" style={{ fontSize: '0.8rem' }}>
-                    Disconnect / relink
+                    {t('clientPage.disconnectRelink')}
                   </button>
                 </form>
               </div>
             ) : (
               <>
                 <p style={{ color: 'var(--text-dim)', marginBottom: 12 }}>
-                  Not connected yet. The client needs to add your Google account as a Viewer on their GA4
-                  property first (Admin &gt; Property Access Management).
-                </p>
+                  {t('clientPage.ga4Hint')}
+              </p>
                 <ConnectGA4Button clientId={client.id} />
               </>
             )}
@@ -428,30 +429,29 @@ export default async function ClientPage({
   if (canTagManager) {
     tabs.push({
       id: 'tag-manager',
-      label: 'Tag Manager',
+      label: t('clientPage.tabTagManager'),
       content: (
         <>
           <div className="card">
-            <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>Tag Manager connection</h2>
+            <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>{t('clientPage.gtmTitle')}</h2>
             {gtmContainer ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <p style={{ margin: 0 }}>
-                  Connected — account <code>{gtmContainer.gtmAccountId}</code>, container{' '}
+                  {t('clientPage.connectedAccount')} <code>{gtmContainer.gtmAccountId}</code>, {t('clientPage.container')}{' '}
                   <code>{gtmContainer.gtmContainerId}</code>
                 </p>
                 <form action="/api/google-tag-manager/disconnect" method="POST">
                   <input type="hidden" name="clientId" value={client.id} />
                   <button type="submit" className="btn btn-secondary" style={{ fontSize: '0.8rem' }}>
-                    Disconnect / relink
+                    {t('clientPage.disconnectRelink')}
                   </button>
                 </form>
               </div>
             ) : (
               <>
                 <p style={{ color: 'var(--text-dim)', marginBottom: 12 }}>
-                  Not connected yet. The client needs to add your Google account as a user on their GTM
-                  container first, with Edit + Publish permission (Admin &gt; User Management).
-                </p>
+                  {t('clientPage.gtmHint')}
+              </p>
                 <ConnectGTMButton clientId={client.id} />
               </>
             )}
@@ -465,30 +465,28 @@ export default async function ClientPage({
   if (canBusinessProfile) {
     tabs.push({
       id: 'business-profile',
-      label: 'Business Profile',
+      label: t('clientPage.tabBusinessProfile'),
       content: (
         <>
           <div className="card">
-            <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>Business Profile connection</h2>
+            <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>{t('clientPage.gbpTitle')}</h2>
             {gbpAccount ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <p style={{ margin: 0 }}>
-                  Connected — account <code>{gbpAccount.gbpAccountId}</code>
+                  {t('clientPage.connectedAccount')} <code>{gbpAccount.gbpAccountId}</code>
                 </p>
                 <form action="/api/google-business/disconnect" method="POST">
                   <input type="hidden" name="clientId" value={client.id} />
                   <button type="submit" className="btn btn-secondary" style={{ fontSize: '0.8rem' }}>
-                    Disconnect / relink
+                    {t('clientPage.disconnectRelink')}
                   </button>
                 </form>
               </div>
             ) : (
               <>
                 <p style={{ color: 'var(--text-dim)', marginBottom: 12 }}>
-                  Not connected yet. The client needs to add your Google account as a Manager or Owner on their
-                  Business Profile first. Note Google requires its own separate access-approval process for
-                  this API family — expect connection or sync to fail with a quota error until that's granted.
-                </p>
+                  {t('clientPage.gbpHint')}
+              </p>
                 <ConnectBusinessProfileButton clientId={client.id} />
               </>
             )}
@@ -517,15 +515,14 @@ export default async function ClientPage({
   if (canMeta) {
     tabs.push({
       id: 'meta',
-      label: 'Meta Ads',
+      label: t('clientPage.tabMeta'),
       content: (
         <>
           {pendingMetaAccounts && (
             <div className="card" style={{ borderColor: 'var(--accent2)' }}>
-              <h2 style={{ fontSize: '1.1rem', marginBottom: 6 }}>Choose the Meta ad account to connect</h2>
+              <h2 style={{ fontSize: '1.1rem', marginBottom: 6 }}>{t('clientPage.chooseMeta')}</h2>
               <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: 12 }}>
-                Your Meta login has access to {pendingMetaAccounts.length} ad accounts. Pick the one that belongs
-                to this client — this selection expires in 10 minutes, so reconnect if you don't finish in time.
+                {t('clientPage.pickMeta', { n: pendingMetaAccounts.length })}
               </p>
               <form action="/api/meta/connect/finish" method="POST">
                 <input type="hidden" name="clientId" value={client.id} />
@@ -544,32 +541,30 @@ export default async function ClientPage({
                   </label>
                 ))}
                 <button type="submit" className="btn" style={{ marginTop: 12 }}>
-                  Connect this account
+                  {t('clientPage.connectThisAccount')}
                 </button>
               </form>
             </div>
           )}
           <div className="card">
-            <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>Meta Ads connection</h2>
+            <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>{t('clientPage.metaTitle')}</h2>
             {metaAccount ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <p style={{ margin: 0 }}>
-                  Connected — ad account <code>{metaAccount.metaAdAccountId}</code>
+                  {t('clientPage.connectedAdAccount')} <code>{metaAccount.metaAdAccountId}</code>
                 </p>
                 <form action="/api/meta/disconnect" method="POST">
                   <input type="hidden" name="clientId" value={client.id} />
                   <button type="submit" className="btn btn-secondary" style={{ fontSize: '0.8rem' }}>
-                    Disconnect / relink
+                    {t('clientPage.disconnectRelink')}
                   </button>
                 </form>
               </div>
             ) : (
               <>
                 <p style={{ color: 'var(--text-dim)', marginBottom: 12 }}>
-                  Not connected yet. The client needs to add your Meta account as an admin/advertiser on their
-                  ad account first (Business Settings &gt; Ad Accounts). Facebook and Instagram share this one
-                  connection.
-                </p>
+                  {t('clientPage.metaHint')}
+              </p>
                 <ConnectMetaButton clientId={client.id} />
               </>
             )}
@@ -589,16 +584,14 @@ export default async function ClientPage({
   if (canSnapchat) {
     tabs.push({
       id: 'snapchat',
-      label: 'Snapchat Ads',
+      label: t('clientPage.tabSnapchat'),
       content: (
         <>
           {pendingSnapAccounts && (
             <div className="card" style={{ borderColor: 'var(--accent2)' }}>
-              <h2 style={{ fontSize: '1.1rem', marginBottom: 6 }}>Choose the Snapchat ad account to connect</h2>
+              <h2 style={{ fontSize: '1.1rem', marginBottom: 6 }}>{t('clientPage.chooseSnap')}</h2>
               <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: 12 }}>
-                Your Snapchat login has access to {pendingSnapAccounts.length} ad accounts across one or more
-                Organizations. Pick the one that belongs to this client — this selection expires in 10 minutes,
-                so reconnect if you don't finish in time.
+                {t('clientPage.pickSnap', { n: pendingSnapAccounts.length })}
               </p>
               <form action="/api/snapchat/connect/finish" method="POST">
                 <input type="hidden" name="clientId" value={client.id} />
@@ -617,31 +610,30 @@ export default async function ClientPage({
                   </label>
                 ))}
                 <button type="submit" className="btn" style={{ marginTop: 12 }}>
-                  Connect this account
+                  {t('clientPage.connectThisAccount')}
                 </button>
               </form>
             </div>
           )}
           <div className="card">
-            <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>Snapchat Ads connection</h2>
+            <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>{t('clientPage.snapTitle')}</h2>
             {snapAccount ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <p style={{ margin: 0 }}>
-                  Connected — ad account <code>{snapAccount.snapAdAccountId}</code>
+                  {t('clientPage.connectedAdAccount')} <code>{snapAccount.snapAdAccountId}</code>
                 </p>
                 <form action="/api/snapchat/disconnect" method="POST">
                   <input type="hidden" name="clientId" value={client.id} />
                   <button type="submit" className="btn btn-secondary" style={{ fontSize: '0.8rem' }}>
-                    Disconnect / relink
+                    {t('clientPage.disconnectRelink')}
                   </button>
                 </form>
               </div>
             ) : (
               <>
                 <p style={{ color: 'var(--text-dim)', marginBottom: 12 }}>
-                  Not connected yet. The client needs to add your Snapchat account as a member on their
-                  Organization in Snap Business Manager first.
-                </p>
+                  {t('clientPage.snapHint')}
+              </p>
                 <ConnectSnapchatButton clientId={client.id} />
               </>
             )}
@@ -655,16 +647,14 @@ export default async function ClientPage({
   if (canTikTok) {
     tabs.push({
       id: 'tiktok',
-      label: 'TikTok Ads',
+      label: t('clientPage.tabTikTok'),
       content: (
         <>
           {pendingTikTokAccounts && (
             <div className="card" style={{ borderColor: 'var(--accent2)' }}>
-              <h2 style={{ fontSize: '1.1rem', marginBottom: 6 }}>Choose the TikTok advertiser account to connect</h2>
+              <h2 style={{ fontSize: '1.1rem', marginBottom: 6 }}>{t('clientPage.chooseTikTok')}</h2>
               <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: 12 }}>
-                Your TikTok login has access to {pendingTikTokAccounts.length} advertiser accounts. Pick the one
-                that belongs to this client — this selection expires in 10 minutes, so reconnect if you don't
-                finish in time.
+                {t('clientPage.pickTikTok', { n: pendingTikTokAccounts.length })}
               </p>
               <form action="/api/tiktok/connect/finish" method="POST">
                 <input type="hidden" name="clientId" value={client.id} />
@@ -681,31 +671,30 @@ export default async function ClientPage({
                   </label>
                 ))}
                 <button type="submit" className="btn" style={{ marginTop: 12 }}>
-                  Connect this account
+                  {t('clientPage.connectThisAccount')}
                 </button>
               </form>
             </div>
           )}
           <div className="card">
-            <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>TikTok Ads connection</h2>
+            <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>{t('clientPage.tiktokTitle')}</h2>
             {tiktokAccount ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <p style={{ margin: 0 }}>
-                  Connected — advertiser account <code>{tiktokAccount.advertiserId}</code>
+                  {t('clientPage.connectedAdvertiser')} <code>{tiktokAccount.advertiserId}</code>
                 </p>
                 <form action="/api/tiktok/disconnect" method="POST">
                   <input type="hidden" name="clientId" value={client.id} />
                   <button type="submit" className="btn btn-secondary" style={{ fontSize: '0.8rem' }}>
-                    Disconnect / relink
+                    {t('clientPage.disconnectRelink')}
                   </button>
                 </form>
               </div>
             ) : (
               <>
                 <p style={{ color: 'var(--text-dim)', marginBottom: 12 }}>
-                  Not connected yet. The client needs to add your TikTok Business Center account to their
-                  advertiser account first.
-                </p>
+                  {t('clientPage.tiktokHint')}
+              </p>
                 <ConnectTikTokButton clientId={client.id} />
               </>
             )}
@@ -719,12 +708,12 @@ export default async function ClientPage({
   if (canCampaigns) {
     tabs.push({
       id: 'campaigns',
-      label: 'Campaigns',
+      label: t('clientPage.tabCampaigns'),
       count: client.campaigns.length,
       content: (
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
-            <h2 style={{ fontSize: '1.1rem' }}>Campaigns</h2>
+            <h2 style={{ fontSize: '1.1rem' }}>{t('clientPage.campaignsTitle')}</h2>
             {account && (
               <div style={{ display: 'flex', gap: 8 }}>
                 <ImportCampaignsButton clientId={client.id} googleAdsAccountId={account.id} />
@@ -746,7 +735,7 @@ export default async function ClientPage({
   if ((account || metaAccount) && canEdit(access)) {
     tabs.push({
       id: 'ai-insights',
-      label: 'AI Insights',
+      label: t('clientPage.tabAiInsights'),
       count: pendingInsightCount,
       content: (
         <>
@@ -777,7 +766,7 @@ export default async function ClientPage({
   if (account && canTargeting) {
     tabs.push({
       id: 'recommendations',
-      label: 'Recommendations',
+      label: t('clientPage.tabRecommendations'),
       content: <RecommendationsPanel clientId={client.id} googleAdsAccountId={account.id} />,
     });
   }
@@ -785,7 +774,7 @@ export default async function ClientPage({
   if (isAdmin || canInvoices) {
     tabs.push({
       id: 'finance',
-      label: 'Finance',
+      label: t('clientPage.tabFinance'),
       content: isAdmin ? (
         <FinanceSection
           clientId={client.id}
@@ -801,7 +790,7 @@ export default async function ClientPage({
   if (isAdmin) {
     tabs.push({
       id: 'access',
-      label: 'Access',
+      label: t('clientPage.tabAccess'),
       content: <AccessManager clientId={client.id} staff={staff} assignments={assignments} />,
     });
   }
@@ -809,11 +798,11 @@ export default async function ClientPage({
   if (isAdmin) {
     tabs.push({
       id: 'activity',
-      label: 'Activity',
+      label: t('clientPage.tabActivity'),
       content: (
         <div className="card">
-          <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>Action log</h2>
-          {client.actionLogs.length === 0 && <p style={{ color: 'var(--text-dim)' }}>No actions yet.</p>}
+          <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>{t('clientPage.actionLog')}</h2>
+          {client.actionLogs.length === 0 && <p style={{ color: 'var(--text-dim)' }}>{t('clientPage.noActions')}</p>}
           {client.actionLogs.map((log) => (
             <div key={log.id} style={{ borderBottom: '1px solid var(--card-border)', padding: '10px 0', fontSize: '0.85rem' }}>
               <span className={`badge badge-${log.status.toLowerCase().replace('_approval', '').replace('pending','pending')}`}>
@@ -829,106 +818,106 @@ export default async function ClientPage({
   }
 
   return (
-    <LocaleProvider locale={getLocale()} currency={client.displayCurrency}>
+    <LocaleProvider locale={locale} currency={client.displayCurrency}>
     <div className="container-wide">
       <DashboardNav />
       <a href="/dashboard" style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>
-        ← All clients
+        {t('clientPage.allClients')}
       </a>
       <h1 style={{ fontSize: '1.6rem', margin: '8px 0 4px' }}>{client.name}</h1>
       <p style={{ color: 'var(--text-dim)', marginBottom: 24 }}>
-        {client.industry ?? 'No industry'} · Goal: {client.primaryGoal ?? 'Not set'} · Budget:{' '}
-        {client.monthlyBudget ? `$${(client.monthlyBudget / 100).toLocaleString()}/mo` : 'Not set'}
+        {client.industry ?? t('clientPage.noIndustry')} · {t('clientPage.goal')}: {client.primaryGoal ?? t('clientPage.notSet')} · {t('clientPage.budget')}:{' '}
+        {client.monthlyBudget ? `${formatMoney(client.monthlyBudget, locale, client.displayCurrency)}${t('clientPage.perMonth')}` : t('clientPage.notSet')}
         {' · '}
         {client.validUntil ? (
           (() => {
             const now = new Date();
             const msLeft = client.validUntil.getTime() - now.getTime();
             const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
-            const label = `Valid until ${client.validUntil.toLocaleDateString()}`;
+            const label = t('clientPage.validUntil', { date: formatDate(client.validUntil, locale) });
             const badgeClass = daysLeft < 0 ? 'badge-pending' : daysLeft <= 14 ? 'badge-draft' : 'badge-approved';
-            const suffix = daysLeft < 0 ? ' (expired)' : daysLeft <= 14 ? ` (${daysLeft}d left)` : '';
+            const suffix = daysLeft < 0 ? ` ${t('clientPage.expired')}` : daysLeft <= 14 ? ` ${t('clientPage.daysLeft', { d: daysLeft })}` : '';
             return <span className={`badge ${badgeClass}`}>{label}{suffix}</span>;
           })()
         ) : (
-          <span className="badge badge-draft">Validity not set</span>
+          <span className="badge badge-draft">{t('clientPage.validityNotSet')}</span>
         )}
         {!isAdmin && (
           <>
             {' '}
-            · <span className="badge badge-draft">{access === 'EDIT' ? 'Edit access' : 'View only'}</span>
+            · <span className="badge badge-draft">{access === 'EDIT' ? t('clientPage.editAccess') : t('clientPage.viewOnly')}</span>
           </>
         )}
       </p>
 
       {searchParams.googleAds === 'connected' && (
         <div className="card" style={{ borderColor: 'var(--accent2)' }}>
-          Google Ads account connected successfully.
+          {t('clientPage.gadsOk')}
         </div>
       )}
       {searchParams.googleAds === 'error' && (
         <div className="card" style={{ borderColor: '#ef4444' }}>
-          Connection failed: {searchParams.message}
+          {t('clientPage.gadsErr', { msg: searchParams.message ?? '' })}
         </div>
       )}
       {searchParams.ga4 === 'connected' && (
         <div className="card" style={{ borderColor: 'var(--accent2)' }}>
-          GA4 property connected successfully.
+          {t('clientPage.ga4Ok')}
         </div>
       )}
       {searchParams.ga4 === 'error' && (
         <div className="card" style={{ borderColor: '#ef4444' }}>
-          GA4 connection failed: {searchParams.message}
+          {t('clientPage.ga4Err', { msg: searchParams.message ?? '' })}
         </div>
       )}
       {searchParams.gtm === 'connected' && (
         <div className="card" style={{ borderColor: 'var(--accent2)' }}>
-          GTM container connected successfully.
+          {t('clientPage.gtmOk')}
         </div>
       )}
       {searchParams.gtm === 'error' && (
         <div className="card" style={{ borderColor: '#ef4444' }}>
-          GTM connection failed: {searchParams.message}
+          {t('clientPage.gtmErr', { msg: searchParams.message ?? '' })}
         </div>
       )}
       {searchParams.gbp === 'connected' && (
         <div className="card" style={{ borderColor: 'var(--accent2)' }}>
-          Business Profile account connected successfully.
+          {t('clientPage.gbpOk')}
         </div>
       )}
       {searchParams.gbp === 'error' && (
         <div className="card" style={{ borderColor: '#ef4444' }}>
-          Business Profile connection failed: {searchParams.message}
+          {t('clientPage.gbpErr', { msg: searchParams.message ?? '' })}
         </div>
       )}
       {searchParams.meta === 'connected' && (
         <div className="card" style={{ borderColor: 'var(--accent2)' }}>
-          Meta ad account connected successfully.
+          {t('clientPage.metaOk')}
         </div>
       )}
       {searchParams.meta === 'error' && (
         <div className="card" style={{ borderColor: '#ef4444' }}>
-          Meta connection failed: {searchParams.message}
+          {t('clientPage.metaErr', { msg: searchParams.message ?? '' })}
         </div>
       )}
       {searchParams.snapchat === 'connected' && (
         <div className="card" style={{ borderColor: 'var(--accent2)' }}>
-          Snapchat ad account connected successfully.
+          {t('clientPage.snapOk')}
         </div>
       )}
       {searchParams.snapchat === 'error' && (
         <div className="card" style={{ borderColor: '#ef4444' }}>
-          Snapchat connection failed: {searchParams.message}
+          {t('clientPage.snapErr', { msg: searchParams.message ?? '' })}
         </div>
       )}
       {searchParams.tiktok === 'connected' && (
         <div className="card" style={{ borderColor: 'var(--accent2)' }}>
-          TikTok ad account connected successfully.
+          {t('clientPage.tiktokOk')}
         </div>
       )}
       {searchParams.tiktok === 'error' && (
         <div className="card" style={{ borderColor: '#ef4444' }}>
-          TikTok connection failed: {searchParams.message}
+          {t('clientPage.tiktokErr', { msg: searchParams.message ?? '' })}
         </div>
       )}
 

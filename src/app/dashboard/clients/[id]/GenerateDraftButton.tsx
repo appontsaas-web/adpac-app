@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 
 export default function GenerateDraftButton({
   clientId,
@@ -11,6 +12,7 @@ export default function GenerateDraftButton({
   googleAdsAccountId: string;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,7 +27,7 @@ export default function GenerateDraftButton({
     setLoading(false);
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error ?? 'Failed to generate draft');
+      setError(data.error ?? t('cards.generateFailed'));
       return;
     }
     router.refresh();
@@ -34,7 +36,7 @@ export default function GenerateDraftButton({
   return (
     <div>
       <button className="btn" onClick={handleClick} disabled={loading}>
-        {loading ? 'Generating…' : '✦ Generate AI campaign draft'}
+        {loading ? t('cards.generating') : t('cards.generateDraft')}
       </button>
       {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginTop: 6 }}>{error}</p>}
     </div>

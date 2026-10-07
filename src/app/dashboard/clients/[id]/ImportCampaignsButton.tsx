@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 
 // Pulls in campaigns that already exist on the client's Google Ads account
 // but weren't created through AdPac (e.g. set up directly in the Google Ads
@@ -18,6 +19,7 @@ export default function ImportCampaignsButton({
   googleAdsAccountId: string;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,15 +36,13 @@ export default function ImportCampaignsButton({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error ?? 'Import failed');
+        setError(data.error ?? t('cards.importFailed'));
         return;
       }
-      setMessage(
-        `Imported ${data.imported} new campaign(s), updated ${data.updated} existing one(s) (${data.total} found on Google Ads).`
-      );
+      setMessage(t('cards.importDone', { imported: data.imported, updated: data.updated, total: data.total }));
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Import failed — network error');
+      setError(err.message ?? t('cards.importFailed'));
     } finally {
       setLoading(false);
     }
@@ -51,7 +51,7 @@ export default function ImportCampaignsButton({
   return (
     <div>
       <button className="btn btn-secondary" onClick={handleClick} disabled={loading}>
-        {loading ? 'Importing…' : 'Import existing campaigns'}
+        {loading ? t('cards.importing') : t('cards.importExisting')}
       </button>
       {message && <p style={{ color: 'var(--accent2)', fontSize: '0.8rem', marginTop: 6 }}>{message}</p>}
       {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginTop: 6 }}>{error}</p>}

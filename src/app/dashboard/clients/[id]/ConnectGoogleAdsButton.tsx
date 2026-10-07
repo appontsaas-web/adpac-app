@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 
 // Google Ads account linking is manual-ID based, not OAuth-account-guessed.
 // Why: AdPac creates client accounts directly inside its own Manager (MCC)
@@ -10,6 +11,7 @@ import { useState } from 'react';
 // link, so we just ask for it directly instead of guessing from whichever
 // account Google's OAuth consent screen happens to return first.
 export default function ConnectGoogleAdsButton({ clientId }: { clientId: string }) {
+  const { t } = useI18n();
   const [customerId, setCustomerId] = useState('');
 
   const digitsOnly = customerId.replace(/[^0-9]/g, '');
@@ -24,7 +26,7 @@ export default function ConnectGoogleAdsButton({ clientId }: { clientId: string 
       <input type="hidden" name="clientId" value={clientId} />
       <input type="hidden" name="customerId" value={digitsOnly} />
       <label htmlFor="googleAdsCustomerId">
-        Google Ads Customer ID
+        {t('cards.gadsCustomerId')}
         <input
           id="googleAdsCustomerId"
           type="text"
@@ -34,11 +36,10 @@ export default function ConnectGoogleAdsButton({ clientId }: { clientId: string 
         />
       </label>
       <p className="hint">
-        Find this in the Google Ads UI, top-right of the account page — the 10-digit ID for
-        THIS client's account (not your Manager account's ID).
+        {t('cards.gadsIdHint')}
       </p>
       <button type="submit" className="btn" disabled={!isValid}>
-        Connect Google Ads account
+        {t('cards.connectGads')}
       </button>
     </form>
   );

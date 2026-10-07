@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 
 // Sets who at the client's business can sign into their Client Portal
 // (/portal) — magic-link only, no password. Without this set, the portal is
@@ -19,6 +20,7 @@ export default function PortalContactForm({
   readOnly?: boolean;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [name, setName] = useState(initialName ?? '');
   const [email, setEmail] = useState(initialEmail ?? '');
   const [saving, setSaving] = useState(false);
@@ -37,13 +39,13 @@ export default function PortalContactForm({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error ?? `Save failed (${res.status})`);
+        setError(data.error ?? `${t('cards.saveFailed')} (${res.status})`);
         return;
       }
       setSaved(true);
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Save failed — network error');
+      setError(err.message ?? t('cards.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -51,15 +53,13 @@ export default function PortalContactForm({
 
   return (
     <div className="card">
-      <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>Client portal contact</h2>
+      <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>{t('cards.portalTitle')}</h2>
       <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: 12 }}>
-        Who at this client can sign into their portal (magic-link email, no password) to fill the monthly
-        goals/audience form and review &amp; approve plans. Leave blank to keep the portal off for this client.
-        Saving a new or changed email sends them a sign-in link right away.
+        {t('cards.portalHelp')}
       </p>
-      <label>Contact name</label>
+      <label>{t('cards.contactName')}</label>
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Doe" disabled={readOnly} />
-      <label>Contact email</label>
+      <label>{t('cards.contactEmail')}</label>
       <input
         type="email"
         value={email}
@@ -70,9 +70,9 @@ export default function PortalContactForm({
       {!readOnly && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button className="btn btn-secondary" onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? t('common.loading') : t('common.save')}
           </button>
-          {saved && <span style={{ color: 'var(--accent2)', fontSize: '0.82rem' }}>Saved.</span>}
+          {saved && <span style={{ color: 'var(--accent2)', fontSize: '0.82rem' }}>{t('cards.saved')}</span>}
           {error && <span style={{ color: '#ef4444', fontSize: '0.82rem' }}>{error}</span>}
         </div>
       )}
