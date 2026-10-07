@@ -30,7 +30,7 @@ function fmtTokens(n: number) {
 // current month — broken down by calendar month so months can be compared
 // side by side.
 export default function AIImpactCard({ clientId, isAdmin }: { clientId: string; isAdmin?: boolean }) {
-  const { tr, moneyUsd: money } = useI18n();
+  const { tr, moneyUsd: money, month } = useI18n();
   const [data, setData] = useState<ImpactResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -176,7 +176,7 @@ export default function AIImpactCard({ clientId, isAdmin }: { clientId: string; 
                 return (
                   <tr key={r.monthKey} style={{ borderBottom: '1px solid var(--card-border)' }}>
                     <td style={{ padding: '8px 6px' }}>
-                      {r.label}
+                      {month(r.monthKey, 'short')}
                       {r.isOverride && (
                         <span
                           className="badge badge-draft"

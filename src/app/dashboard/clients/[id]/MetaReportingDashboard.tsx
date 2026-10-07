@@ -377,7 +377,7 @@ export default function MetaReportingDashboard({
                   fontWeight: !customRange && days === r.days ? 700 : 400,
                 }}
               >
-                {r.label}
+                {tr(r.label)}
               </button>
             ))}
           </div>
@@ -435,7 +435,7 @@ export default function MetaReportingDashboard({
                       disabled={(s as any).disabled}
                       onChange={(e) => setReportSections((prev) => ({ ...prev, [s.key]: e.target.checked }))}
                     />
-                    {s.label}
+                    {tr(s.label)}
                   </label>
                 ))}
                 <button
@@ -498,7 +498,7 @@ export default function MetaReportingDashboard({
                 fontWeight: compareMode === opt.mode ? 700 : 400,
               }}
             >
-              {opt.label}
+              {tr(opt.label)}
             </button>
           ))}
         </div>

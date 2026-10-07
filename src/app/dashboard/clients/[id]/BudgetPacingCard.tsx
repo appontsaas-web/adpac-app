@@ -37,11 +37,11 @@ function paceColor(pct: number | null) {
   return '#22c55e';
 }
 
-function paceLabel(pct: number | null) {
+function paceLabel(pct: number | null, tr: (s: string) => string) {
   if (pct === null) return '—';
-  if (pct > 110) return 'Overspending';
-  if (pct < 90) return 'Underspending';
-  return 'On track';
+  if (pct > 110) return tr('Overspending');
+  if (pct < 90) return tr('Underspending');
+  return tr('On track');
 }
 
 function ProgressBar({ pct }: { pct: number | null }) {
@@ -70,7 +70,7 @@ function ProgressBar({ pct }: { pct: number | null }) {
 // dashboard's own date-range picker — pacing only means something relative
 // to a real billing month, not an arbitrary rolling window.
 export default function BudgetPacingCard({ googleAdsAccountId }: { googleAdsAccountId: string }) {
-  const { tr, money } = useI18n();
+  const { tr, money, month } = useI18n();
   const [data, setData] = useState<PacingResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,7 +103,7 @@ export default function BudgetPacingCard({ googleAdsAccountId }: { googleAdsAcco
         <h2 style={{ fontSize: '1.1rem' }}>{tr("Budget pacing")}</h2>
         {data && (
           <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
-            {data.monthLabel} {tr("— day")}{' '}{data.daysElapsed} {tr("of")}{' '}{data.daysInMonth}
+            {month(new Date(), 'long')} {tr("— day")}{' '}{data.daysElapsed} {tr("of")}{' '}{data.daysInMonth}
           </span>
         )}
       </div>
@@ -191,7 +191,7 @@ export default function BudgetPacingCard({ googleAdsAccountId }: { googleAdsAcco
                       <ProgressBar pct={c.pacePct} />
                     </td>
                     <td style={{ padding: '8px 6px', fontSize: '0.78rem', fontWeight: 600, color: paceColor(c.pacePct), whiteSpace: 'nowrap' }}>
-                      {c.pacePct !== null ? `${Math.round(c.pacePct)}% · ${paceLabel(c.pacePct)}` : '—'}
+                      {c.pacePct !== null ? `${Math.round(c.pacePct)}% · ${paceLabel(c.pacePct, tr)}` : '—'}
                     </td>
                   </tr>
                 ))}

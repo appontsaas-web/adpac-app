@@ -137,7 +137,7 @@ export default function MetaAdPerformanceCard({
                 fontWeight: !customRange && days === r.days ? 700 : 400,
               }}
             >
-              {r.label}
+              {tr(r.label)}
             </button>
           ))}
         </div>

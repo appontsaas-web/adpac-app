@@ -35,7 +35,7 @@ export default function RealAIImpactCard({
   isAdmin?: boolean;
   initialVisibleToStaff?: boolean;
 }) {
-  const { tr, money: fmtMoney } = useI18n();
+  const { tr, money: fmtMoney, month } = useI18n();
   const money = (cents: number) => (cents < 0 ? `-${fmtMoney(-cents)}` : fmtMoney(cents));
   const [data, setData] = useState<RealImpactResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -170,7 +170,7 @@ export default function RealAIImpactCard({
                     .filter((r) => r.insightsContributing > 0)
                     .map((r) => (
                       <tr key={r.monthKey} style={{ borderBottom: '1px solid var(--card-border)' }}>
-                        <td style={{ padding: '8px 6px' }}>{r.label}</td>
+                        <td style={{ padding: '8px 6px' }}>{month(r.monthKey, 'short')}</td>
                         <td
                           style={{
                             padding: '8px 6px',

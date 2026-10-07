@@ -20,8 +20,8 @@ const METRIC_OPTIONS = [
   { value: 'LEADS', label: 'Leads (count)' },
 ];
 
-function currentMonthLabel(): string {
-  return new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+function currentMonthLabel(month: (d: Date) => string): string {
+  return month(new Date());
 }
 
 // Lets any staff member with reporting access state what this client's goal
@@ -31,7 +31,7 @@ function currentMonthLabel(): string {
 // generic pacing/anomaly signals. See ClientMonthlyGoal's schema comment for
 // why this is monthly and overwritten rather than versioned.
 export default function MonthlyGoalCard({ clientId }: { clientId: string }) {
-  const { tr } = useI18n();
+  const { tr, month } = useI18n();
   const [goal, setGoal] = useState<Goal | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -104,7 +104,7 @@ export default function MonthlyGoalCard({ clientId }: { clientId: string }) {
   return (
     <div className="card" style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: editing ? 12 : 4 }}>
-        <h2 style={{ fontSize: '1.05rem' }}>{tr("Goal for")}{' '}{currentMonthLabel()}</h2>
+        <h2 style={{ fontSize: '1.05rem' }}>{tr("Goal for")}{' '}{currentMonthLabel((d) => month(d))}</h2>
         {!editing && (
           <button className="btn btn-secondary" style={{ fontSize: '0.78rem', padding: '5px 10px' }} onClick={openEdit}>
             {goal ? tr("Edit goal") : tr("Set goal")}
@@ -120,7 +120,7 @@ export default function MonthlyGoalCard({ clientId }: { clientId: string }) {
           <select value={metricType} onChange={(e) => setMetricType(e.target.value)} style={{ marginBottom: 8 }}>
             {METRIC_OPTIONS.map((m) => (
               <option key={m.value} value={m.value}>
-                {m.label}
+                {tr(m.label)}
               </option>
             ))}
           </select>

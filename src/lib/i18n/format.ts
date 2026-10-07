@@ -33,3 +33,9 @@ export function formatDate(d: Date | string, locale: Locale = 'en'): string {
   const date = typeof d === 'string' ? new Date(d) : d;
   return new Intl.DateTimeFormat(intlTag(locale), { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(date);
 }
+
+/** Month + year label from a Date or a 'YYYY-MM' key, e.g. "Jul 2026" / "يوليو 2026". */
+export function formatMonth(d: Date | string, locale: Locale = 'en', style: 'short' | 'long' = 'long'): string {
+  const date = typeof d === 'string' ? new Date(/^\d{4}-\d{2}$/.test(d) ? `${d}-01T00:00:00Z` : d) : d;
+  return new Intl.DateTimeFormat(intlTag(locale), { month: style, year: 'numeric', timeZone: 'UTC' }).format(date);
+}

@@ -158,7 +158,7 @@ export default function GA4ReportingCard({ clientId }: { clientId: string }) {
                 fontWeight: days === r.days ? 700 : 400,
               }}
             >
-              {r.label}
+              {tr(r.label)}
             </button>
           ))}
         </div>

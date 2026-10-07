@@ -4,7 +4,7 @@ import { createContext, useContext, useMemo } from 'react';
 import type { Locale } from './config';
 import { translate, type MessageKey } from './messages';
 import { trString } from './arStrings';
-import { formatMoney, formatNumber, formatPercent, formatDate } from './format';
+import { formatMoney, formatNumber, formatPercent, formatDate, formatMonth } from './format';
 
 interface Ctx {
   locale: Locale;
@@ -44,6 +44,7 @@ export function useI18n() {
       num: (n: number, maxFractionDigits = 0) => formatNumber(n, locale, maxFractionDigits),
       pct: (fraction: number, digits = 2) => formatPercent(fraction, locale, digits),
       date: (d: Date | string) => formatDate(d, locale),
+      month: (d: Date | string, style: 'short' | 'long' = 'long') => formatMonth(d, locale, style),
     }),
     [locale, currency]
   );

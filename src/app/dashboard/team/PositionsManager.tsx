@@ -501,7 +501,7 @@ function MetricVisibilityPanel({ positionId }: { positionId: string }) {
                     onChange={(e) => toggle(platform, m.key, !e.target.checked)}
                     style={{ width: 'auto', margin: 0 }}
                   />
-                  {m.label}
+                  {tr(m.label)}
                 </label>
               );
             })}

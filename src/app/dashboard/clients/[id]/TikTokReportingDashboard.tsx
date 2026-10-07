@@ -305,7 +305,7 @@ export default function TikTokReportingDashboard({
                   fontWeight: !customRange && days === r.days ? 700 : 400,
                 }}
               >
-                {r.label}
+                {tr(r.label)}
               </button>
             ))}
           </div>
@@ -366,7 +366,7 @@ export default function TikTokReportingDashboard({
                 fontWeight: compareMode === opt.mode ? 700 : 400,
               }}
             >
-              {opt.label}
+              {tr(opt.label)}
             </button>
           ))}
         </div>

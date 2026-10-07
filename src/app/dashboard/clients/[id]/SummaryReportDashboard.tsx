@@ -123,7 +123,7 @@ export default function SummaryReportDashboard({ clientId }: { clientId: string 
                     fontWeight: days === r.days ? 700 : 400,
                   }}
                 >
-                  {r.label}
+                  {tr(r.label)}
                 </button>
               ))}
             </div>
