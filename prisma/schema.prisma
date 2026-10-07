@@ -43,6 +43,7 @@ model User {
   passwordHash String
   name         String?
   role         String   @default("STAFF") // ADMIN | STAFF — ADMIN has access to everything; STAFF only sees clients explicitly assigned to them
+  locale       String   @default("en") // UI language: "en" | "ar" (see lib/i18n/config.ts). Mirrors the adpac_locale cookie.
   positionId   String?  // STAFF only — which capability bundle they hold. Unset = no edit capabilities anywhere, even with EDIT client access.
   position     Position? @relation(fields: [positionId], references: [id])
   createdAt    DateTime @default(now())
@@ -105,6 +106,8 @@ model Client {
   // Nullable: the portal is opt-in per client until staff sets this, and a
   // client with no portal contact simply never gets a monthly-form/plan
   // email and can't sign in.
+  portalContactLocale String @default("en") // language for the client's portal + emails: "en" | "ar"
+  displayCurrency     String? // ISO code (SAR, AED...) clients see money in. Stored amounts stay USD cents; converted at display time (lib/currency.ts). Null = USD.
   portalContactName  String?
   portalContactEmail String?
   spendGuardrailEnabled Boolean @default(true)

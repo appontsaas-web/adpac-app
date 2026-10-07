@@ -3,6 +3,7 @@ import { getCurrentPortalClient, currentPeriodKey } from '@/lib/clientPortalAuth
 import { db } from '@/lib/db';
 import PortalLoginForm from './PortalLoginForm';
 import PortalLogoutButton from './PortalLogoutButton';
+import LanguageToggle from '@/lib/i18n/LanguageToggle';
 
 // The portal's home. Gated in two layers:
 //   1. No session -> show the magic-link login form.
@@ -26,6 +27,9 @@ export default async function PortalHomePage({ searchParams }: { searchParams: {
             </p>
           </div>
         )}
+        <div className="container" style={{ maxWidth: 380, paddingTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
+          <LanguageToggle />
+        </div>
         <PortalLoginForm />
       </>
     );
@@ -53,7 +57,10 @@ export default async function PortalHomePage({ searchParams }: { searchParams: {
     <div className="container" style={{ maxWidth: 640, paddingTop: 60, paddingBottom: 60 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <h1 style={{ fontSize: '1.4rem' }}>Welcome, {client.name}</h1>
-        <PortalLogoutButton />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <LanguageToggle />
+          <PortalLogoutButton />
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>

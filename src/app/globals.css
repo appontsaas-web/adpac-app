@@ -21,6 +21,24 @@ body {
   font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* Arabic: swap in Noto Sans Arabic; Latin glyphs (numbers, English terms) fall back through the stack. */
+html[lang='ar'] body {
+  font-family: var(--font-arabic), 'Segoe UI', Tahoma, Arial, sans-serif;
+}
+
+/* Mixed-direction content (campaign names, URLs, emails) should not reorder surrounding Arabic text. */
+bdi,
+.ltr-isolate {
+  unicode-bidi: isolate;
+}
+
+/* Tables/numbers: keep digits and currency strings left-to-right internally. */
+html[dir='rtl'] .num,
+html[dir='rtl'] td.num {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
 a {
   color: inherit;
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import LanguageToggle from '@/lib/i18n/LanguageToggle';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,6 +27,9 @@ export default function LoginPage() {
 
   return (
     <div className="container" style={{ maxWidth: 380, paddingTop: 120 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <LanguageToggle />
+      </div>
       <h1 style={{ fontSize: '1.5rem', marginBottom: 24 }}>AdPac Sign In</h1>
       <form onSubmit={handleSubmit} className="card">
         <label>Email</label>

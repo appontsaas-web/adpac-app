@@ -1,9 +1,12 @@
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/access';
 import SignOutButton from './SignOutButton';
+import LanguageToggle from '@/lib/i18n/LanguageToggle';
+import { getT } from '@/lib/i18n/server';
 
 export default async function DashboardNav() {
   const me = await getCurrentUser();
+  const t = getT();
 
   return (
     <div
@@ -21,11 +24,11 @@ export default async function DashboardNav() {
           AdPac
         </Link>
         <Link href="/dashboard" style={{ color: 'var(--text-dim)', fontSize: '0.85rem', textDecoration: 'none' }}>
-          Clients
+          {t('common.clients')}
         </Link>
         {me?.role === 'ADMIN' && (
           <Link href="/dashboard/team" style={{ color: 'var(--text-dim)', fontSize: '0.85rem', textDecoration: 'none' }}>
-            Team
+            {t('common.team')}
           </Link>
         )}
       </div>
@@ -37,9 +40,10 @@ export default async function DashboardNav() {
         )}
         {me && (
           <Link href="/dashboard/account" style={{ color: 'var(--text-dim)', fontSize: '0.85rem', textDecoration: 'none' }}>
-            Account
+            {t('common.account')}
           </Link>
         )}
+        <LanguageToggle />
         <SignOutButton />
       </div>
     </div>
