@@ -58,6 +58,10 @@ export default async function PortalPlanPage({ params }: { params: { id: string 
         {tr("Audience personas, ad copy, and recommended next steps, built from what you told us and your real campaign performance.")}
       </p>
 
+      <div className="card" style={{ marginBottom: 16, borderColor: 'var(--accent, #6d5efc)' }}>
+        <PortalPlanActions planId={plan.id} status={plan.status} />
+      </div>
+
       <div className="card" style={{ marginBottom: 16 }}>
         <h2 style={{ fontSize: '1.05rem', marginBottom: 6 }}>{tr("Objectives")}</h2>
         <p style={{ fontSize: '0.9rem', marginBottom: 14 }}>{objectives}</p>
@@ -68,8 +72,12 @@ export default async function PortalPlanPage({ params }: { params: { id: string 
       {personas.map((p) => {
         const copy = adCopy.find((c) => c.personaName === p.name);
         return (
-          <div key={p.name} className="card" style={{ marginBottom: 16 }}>
-            <h3 style={{ fontSize: '1rem', marginBottom: 4 }}>{p.name}</h3>
+          <details key={p.name} className="card" style={{ marginBottom: 16 }}>
+            <summary style={{ cursor: 'pointer', listStyle: 'none' }}>
+              <span style={{ fontWeight: 700, fontSize: '1rem' }}>{p.name}</span>
+              <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-dim)', marginTop: 2 }}>{p.summary}</span>
+            </summary>
+            <div style={{ marginTop: 10 }}>
             <p style={{ fontSize: '0.88rem', marginBottom: 8 }}>{p.summary}</p>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginBottom: 10 }}>
               <em>{p.demographicBasis}</em>
@@ -90,7 +98,8 @@ export default async function PortalPlanPage({ params }: { params: { id: string 
                 </div>
               </div>
             )}
-          </div>
+            </div>
+          </details>
         );
       })}
 
@@ -111,7 +120,6 @@ export default async function PortalPlanPage({ params }: { params: { id: string 
         </div>
       )}
 
-      <PortalPlanActions planId={plan.id} status={plan.status} />
     </div>
   );
 }

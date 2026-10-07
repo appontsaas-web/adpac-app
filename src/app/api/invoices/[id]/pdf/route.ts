@@ -22,9 +22,11 @@ function formatDate(d: Date) {
 //
 // NOTE: the "from" business details below are placeholders — edit them with
 // AdPac's real address/contact info before sending invoices to clients.
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const me = await getCurrentUser();
-  if (!me) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+// `opts.skipAuth` is only ever passed by the portal wrapper route, which has already verified ownership.
+// (Next.js only treats the first two args as the route signature, so HTTP callers can never set it.)
+export async function GET(req: NextRequest, { params }: { params: { id: string } }, opts?: { skipAuth?: boolean }) {
+  const me = opts?.skipAuth ? null : await getCurrentUser();
+  if (!opts?.skipAuth && !me) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
   const invoice = await db.invoice.findUnique({
     where: { id: params.id },
@@ -32,7 +34,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   });
   if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
 
-  if (!(await canViewFinance(me, invoice.clientId))) {
+  if (!opts?.skipAuth && !(await canViewFinance(me!, invoice.clientId))) {
     return NextResponse.json({ error: 'Invoice access required for this client' }, { status: 403 });
   }
 

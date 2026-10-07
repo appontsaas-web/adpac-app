@@ -7,6 +7,8 @@ import { formatMoney } from '@/lib/i18n/format';
 import { getLocale } from '@/lib/i18n/server';
 import PortalLoginForm from './PortalLoginForm';
 import PortalLogoutButton from './PortalLogoutButton';
+import { AGENTS, isAgentKey, agentAvatar } from '@/lib/agents';
+import AgentContact from './AgentContact';
 import LanguageToggle from '@/lib/i18n/LanguageToggle';
 
 // The portal's home. Gated in two layers:
@@ -40,7 +42,7 @@ export default async function PortalHomePage({ searchParams }: { searchParams: {
   }
 
   // Self-signed-up prospects only get the free analysis — no monthly form / plans.
-  const prospect = await db.client.findUnique({ where: { id: client.id }, select: { isFreeAnalysis: true, displayCurrency: true } });
+  const prospect = await db.client.findUnique({ where: { id: client.id }, select: { isFreeAnalysis: true, displayCurrency: true, agent: true } });
   if (prospect?.isFreeAnalysis) redirect('/portal/analysis');
 
   const locale = getLocale();
@@ -60,6 +62,7 @@ export default async function PortalHomePage({ searchParams }: { searchParams: {
     loadPlatformRollup(client.id, prevStart, prevEnd),
   ]);
 
+  const agent = isAgentKey(prospect?.agent) ? { key: prospect!.agent as keyof typeof AGENTS, ...AGENTS[prospect!.agent as keyof typeof AGENTS] } : null;
   const money = (c: number) => formatMoney(c, locale, prospect?.displayCurrency);
   const unpaidCount = unpaid._count._all;
   const needs: { key: string; title: string; text: string; href: string; cta: string }[] = [];
@@ -86,8 +89,8 @@ export default async function PortalHomePage({ searchParams }: { searchParams: {
       key: 'invoice',
       title: tr("You have an unpaid invoice"),
       text: `${unpaidCount} · ${money(unpaid._sum.amountCents ?? 0)}`,
-      href: 'mailto:billing@adpac.to',
-      cta: tr("Contact billing"),
+      href: '/portal/billing',
+      cta: tr("View & pay"),
     });
   }
 
@@ -108,8 +111,22 @@ export default async function PortalHomePage({ searchParams }: { searchParams: {
   return (
     <div className="container" style={{ maxWidth: 760, paddingTop: 48, paddingBottom: 60 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 8, flexWrap: 'wrap' }}>
-        <h1 style={{ fontSize: '1.4rem' }}>{tr("Welcome,")}{' '}{client.name}</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {agent && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={agentAvatar(agent.key)} alt={agent.name} width={52} height={52} style={{ borderRadius: '50%', objectFit: 'cover' }} />
+          )}
+          <div>
+            <h1 style={{ fontSize: '1.4rem' }}>{tr("Welcome,")}{' '}{client.name}</h1>
+            {agent && (
+              <div style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>
+                {tr("Your agent")}: <strong style={{ color: 'var(--text)' }}>{agent.name}</strong> · {agent.title}
+              </div>
+            )}
+          </div>
+        </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <a href="/portal/billing" className="btn btn-secondary">{tr("Billing")}</a>
           <LanguageToggle />
           <PortalLogoutButton />
         </div>
@@ -185,6 +202,8 @@ export default async function PortalHomePage({ searchParams }: { searchParams: {
           <a href={`/portal/plan/${latestResolvedPlan.id}`} className="btn btn-secondary" style={{ marginInlineStart: 8 }}>{tr("View")}</a>
         </div>
       )}
+      <AgentContact agentName={agent?.name ?? null} />
+
       {thisMonthInput && (
         <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
           {tr("This month's goals are submitted.")} <a href="/portal/form">{tr("Update this month's goals")}</a>

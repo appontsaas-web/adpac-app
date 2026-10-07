@@ -1,3 +1,4 @@
+import { isAgentKey } from '@/lib/agents';
 import { isDisplayCurrency } from '@/lib/currency';
 import { isLocale } from '@/lib/i18n/config';
 import { NextRequest, NextResponse } from 'next/server';
@@ -50,6 +51,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.adLanguage !== undefined) data.adLanguage = body.adLanguage || null;
   if (body.targetLocations !== undefined) data.targetLocations = body.targetLocations || null;
   if (body.portalContactName !== undefined) data.portalContactName = body.portalContactName || null;
+  if (body.agent !== undefined) {
+    if (body.agent && !isAgentKey(body.agent)) return NextResponse.json({ error: 'Unknown agent' }, { status: 400 });
+    data.agent = body.agent || null;
+  }
   if (body.portalContactEmail !== undefined) data.portalContactEmail = body.portalContactEmail || null;
   if (body.displayCurrency !== undefined) {
     const c = String(body.displayCurrency || '').toUpperCase();

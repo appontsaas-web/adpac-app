@@ -349,6 +349,7 @@ export default async function ClientPage({
           clientId={client.id}
           initialName={client.portalContactName}
           initialEmail={client.portalContactEmail}
+          initialAgent={(client as any).agent ?? null}
           readOnly={!canTargeting}
         />
 

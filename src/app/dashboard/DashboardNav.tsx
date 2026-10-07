@@ -2,11 +2,13 @@ import Link from 'next/link';
 import { getCurrentUser } from '@/lib/access';
 import SignOutButton from './SignOutButton';
 import LanguageToggle from '@/lib/i18n/LanguageToggle';
-import { getT } from '@/lib/i18n/server';
+import { getT, getTr } from '@/lib/i18n/server';
+import { unhandledInboxCount } from '@/lib/inbox';
 
 export default async function DashboardNav() {
   const me = await getCurrentUser();
   const t = getT();
+  const inboxCount = me ? await unhandledInboxCount(me).catch(() => 0) : 0;
 
   return (
     <div
@@ -26,6 +28,14 @@ export default async function DashboardNav() {
         <Link href="/dashboard" style={{ color: 'var(--text-dim)', fontSize: '0.85rem', textDecoration: 'none' }}>
           {t('common.clients')}
         </Link>
+        {me && (
+          <Link href="/dashboard/inbox" style={{ color: 'var(--text-dim)', fontSize: '0.85rem', textDecoration: 'none' }}>
+            {getTr()('Inbox')}
+            {inboxCount > 0 && (
+              <span className="badge badge-pending" style={{ marginInlineStart: 6 }}>{inboxCount}</span>
+            )}
+          </Link>
+        )}
         {me?.role === 'ADMIN' && (
           <Link href="/dashboard/team" style={{ color: 'var(--text-dim)', fontSize: '0.85rem', textDecoration: 'none' }}>
             {t('common.team')}
