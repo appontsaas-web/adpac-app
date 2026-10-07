@@ -315,7 +315,12 @@ async function fetchCampaignInsightsChunk(
     // scope, etc. — is still visible in production logs instead of just
     // looking like "no data" with no trace of why.
     console.error(`snapchat: stats fetch failed for campaign ${campaignId} (${sinceDate}..${untilDate}):`, err.message);
-    return [];
+    // Rethrown so the sync route records it in its `errors` array (a real
+    // failure is no longer indistinguishable from "no data").
+    throw new Error(`stats ${sinceDate}..${untilDate}: ${err.message}`);
+  }
+  if (!data.timeseries_stats?.length) {
+    console.log(`snapchat: campaign ${campaignId} returned no timeseries (${sinceDate}..${untilDate})`);
   }
 
   const rows: SnapDailyInsightRow[] = [];

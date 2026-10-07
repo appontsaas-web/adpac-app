@@ -32,7 +32,10 @@ export async function POST(req: NextRequest) {
   }
 
   const accounts = await db.snapAdAccount.findMany({
-    where: { status: 'connected', ...(accountId ? { id: accountId } : {}) },
+    // A manual sync of one specific account retries it even if a previous
+    // failure flipped it to status 'error' — otherwise a single transient
+    // error would make every later sync silently skip it until reconnect.
+    where: accountId ? { id: accountId } : { status: { in: ['connected', 'error'] } },
   });
 
   const days = Math.min(Math.max(Number(req.nextUrl.searchParams.get('days') ?? 30), 1), 365);
@@ -118,11 +121,15 @@ export async function POST(req: NextRequest) {
           errors.push(`${account.snapAdAccountId} campaign ${c.id} stats: ${err.message}`);
         }
       }
+      if (account.status !== 'connected') {
+        await db.snapAdAccount.update({ where: { id: account.id }, data: { status: 'connected' } });
+      }
     } catch (err: any) {
       errors.push(`${account.snapAdAccountId} campaigns: ${err.message}`);
       await db.snapAdAccount.update({ where: { id: account.id }, data: { status: 'error' } });
     }
   }
 
+  console.log(`snapchat sync: ${accounts.length} account(s), ${campaignsSynced} campaign(s), ${metricsSynced} metric row(s), errors: ${JSON.stringify(errors)}`);
   return NextResponse.json({ campaignsSynced, metricsSynced, errors });
 }
