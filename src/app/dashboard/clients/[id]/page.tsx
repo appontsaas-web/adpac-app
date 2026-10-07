@@ -319,7 +319,7 @@ export default async function ClientPage({
           clientId={client.id}
           initialCurrency={client.displayCurrency}
           initialPortalLocale={client.portalContactLocale}
-          readOnly={!canTargeting}
+          readOnly={!(canTargeting || canReporting)}
         />
 
         <PortalContactForm

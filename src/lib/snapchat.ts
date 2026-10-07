@@ -1,3 +1,4 @@
+import { fxRateToUsd as sharedFxRateToUsd } from './fx';
 // ---------------------------------------------------------------------------
 // Snapchat Marketing API integration
 //
@@ -179,21 +180,8 @@ export async function verifyAdAccountAccess(adAccountId: string, refreshToken: s
 // 1:1 with a console warning" approach as lib/meta.ts's FX_RATE_TO_USD
 // (kept as its own copy rather than shared, matching how every ad-platform
 // integration in this app keeps its own FX table).
-const FX_RATE_TO_USD: Record<string, number> = {
-  USD: 1,
-};
-
 function fxRateToUsd(currencyCode: string | null | undefined): number {
-  if (!currencyCode) return 1;
-  const rate = FX_RATE_TO_USD[currencyCode.toUpperCase()];
-  if (rate === undefined) {
-    console.warn(
-      `snapchat: no FX rate configured for currency "${currencyCode}" — treating as USD 1:1. ` +
-        `Add its real rate to FX_RATE_TO_USD in lib/snapchat.ts.`
-    );
-    return 1;
-  }
-  return rate;
+  return sharedFxRateToUsd(currencyCode, 'snapchat');
 }
 
 // Snapchat reports money as "micro-currency": 1.00 local currency unit =

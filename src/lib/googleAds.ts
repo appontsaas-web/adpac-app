@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import { fxRateToUsd as sharedFxRateToUsd } from './fx';
 
 // ---------------------------------------------------------------------------
 // Google Ads integration
@@ -106,23 +107,8 @@ export async function listAccessibleCustomers(refreshToken: string): Promise<str
 // listed here falls back to 1 (treated as already-USD) with a console
 // warning rather than silently mis-converting — add its real rate here if
 // that warning ever shows up for a client.
-const FX_RATE_TO_USD: Record<string, number> = {
-  USD: 1,
-  SAR: 1 / 3.75, // Saudi Riyal — pegged to USD since 1986
-  AED: 1 / 3.6725, // UAE Dirham — pegged to USD since 1997
-};
-
 function fxRateToUsd(currencyCode: string | null | undefined): number {
-  if (!currencyCode) return 1; // no currency on record yet — assume USD until a sync fills it in
-  const rate = FX_RATE_TO_USD[currencyCode.toUpperCase()];
-  if (rate === undefined) {
-    console.warn(
-      `googleAds: no FX rate configured for currency "${currencyCode}" — treating as USD 1:1. ` +
-        `Add its real rate to FX_RATE_TO_USD in lib/googleAds.ts.`
-    );
-    return 1;
-  }
-  return rate;
+  return sharedFxRateToUsd(currencyCode, 'googleAds');
 }
 
 /** Looks up the account's real billing currency (e.g. "SAR", "USD"). */

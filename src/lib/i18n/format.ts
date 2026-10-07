@@ -1,5 +1,5 @@
 import { intlTag, type Locale } from './config';
-import { usdCentsToDisplayAmount } from '../currency';
+import { usdCentsToDisplayAmount, ZERO_DECIMAL_CURRENCIES } from '../currency';
 
 /** Money: takes USD cents (how everything is stored) and renders it in the client's display currency. */
 export function formatMoney(usdCents: number, locale: Locale = 'en', currency?: string | null): string {
@@ -9,8 +9,8 @@ export function formatMoney(usdCents: number, locale: Locale = 'en', currency?: 
     return new Intl.NumberFormat(intlTag(locale), {
       style: 'currency',
       currency: code,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: ZERO_DECIMAL_CURRENCIES.has(code) ? 0 : 2,
+      maximumFractionDigits: ZERO_DECIMAL_CURRENCIES.has(code) ? 0 : 2,
     }).format(amount);
   } catch {
     return `${amount.toFixed(2)} ${code}`;

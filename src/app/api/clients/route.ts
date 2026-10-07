@@ -1,3 +1,4 @@
+import { isDisplayCurrency, displayAmountToUsdCents } from '@/lib/currency';
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/access';
 import { db } from '@/lib/db';
@@ -26,12 +27,16 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   if (!body.name) return NextResponse.json({ error: 'name is required' }, { status: 400 });
 
+  const cur = String(body.displayCurrency || 'USD').toUpperCase();
+  if (!isDisplayCurrency(cur)) return NextResponse.json({ error: `Unsupported currency "${cur}"` }, { status: 400 });
+
   const client = await db.client.create({
     data: {
       name: body.name,
       website: body.website || null,
       industry: body.industry || null,
-      monthlyBudget: body.monthlyBudget ? Math.round(Number(body.monthlyBudget) * 100) : null,
+      monthlyBudget: body.monthlyBudget ? displayAmountToUsdCents(Number(body.monthlyBudget), cur) : null,
+      displayCurrency: cur === 'USD' ? null : cur,
       primaryGoal: body.primaryGoal || null,
       adLanguage: body.adLanguage || null,
       targetLocations: body.targetLocations || null,

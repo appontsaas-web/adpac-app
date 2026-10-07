@@ -1,3 +1,4 @@
+import { fxRateToUsd as sharedFxRateToUsd } from './fx';
 // ---------------------------------------------------------------------------
 // TikTok Business (Marketing) API integration — v1.3
 //
@@ -160,21 +161,8 @@ export async function getAdvertiserInfo(advertiserIds: string[], accessToken: st
 // 1:1 with a console warning" approach as lib/snapchat.ts's FX_RATE_TO_USD
 // (kept as its own copy rather than shared, matching how every ad-platform
 // integration in this app keeps its own FX table).
-const FX_RATE_TO_USD: Record<string, number> = {
-  USD: 1,
-};
-
 function fxRateToUsd(currencyCode: string | null | undefined): number {
-  if (!currencyCode) return 1;
-  const rate = FX_RATE_TO_USD[currencyCode.toUpperCase()];
-  if (rate === undefined) {
-    console.warn(
-      `tiktok: no FX rate configured for currency "${currencyCode}" — treating as USD 1:1. ` +
-        `Add its real rate to FX_RATE_TO_USD in lib/tiktok.ts.`
-    );
-    return 1;
-  }
-  return rate;
+  return sharedFxRateToUsd(currencyCode, 'tiktok');
 }
 
 // TikTok reports money as plain decimal strings in the advertiser's own

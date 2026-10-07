@@ -1,7 +1,7 @@
 import { isDisplayCurrency } from '@/lib/currency';
 import { isLocale } from '@/lib/i18n/config';
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, hasCapability } from '@/lib/access';
+import { getCurrentUser, hasCapability, canViewReporting } from '@/lib/access';
 import { db } from '@/lib/db';
 import { sendPortalLoginLink } from '@/lib/clientPortalAuth';
 
@@ -20,13 +20,23 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const body = await req.json();
   const wantsGuardrailChange = body.spendGuardrailEnabled !== undefined;
-  const wantsOtherFields = Object.keys(body).some((k) => k !== 'spendGuardrailEnabled');
+  // Display currency / portal language are presentation settings: anyone with targeting OR reporting access to the client may change them.
+  const LOCALE_KEYS = ['displayCurrency', 'portalContactLocale'];
+  const wantsOtherFields = Object.keys(body).some((k) => k !== 'spendGuardrailEnabled' && !LOCALE_KEYS.includes(k));
+  const wantsLocaleChange = Object.keys(body).some((k) => LOCALE_KEYS.includes(k));
 
   if (wantsGuardrailChange && me.role !== 'ADMIN') {
     return NextResponse.json({ error: 'Admin access required to change the spend guardrail' }, { status: 403 });
   }
   if (wantsOtherFields && !(await hasCapability(me, params.id, 'targeting'))) {
     return NextResponse.json({ error: 'Targeting management access required for this client' }, { status: 403 });
+  }
+
+  if (
+    wantsLocaleChange &&
+    !(me.role === 'ADMIN' || (await hasCapability(me, params.id, 'targeting')) || (await canViewReporting(me, params.id)))
+  ) {
+    return NextResponse.json({ error: 'Edit access required for this client' }, { status: 403 });
   }
 
   const data: Record<string, unknown> = {};

@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { DISPLAY_CURRENCIES } from '@/lib/currency';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/LocaleProvider';
 
 export default function NewClientForm() {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, tr } = useI18n();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,6 +16,7 @@ export default function NewClientForm() {
     website: '',
     industry: '',
     monthlyBudget: '',
+    displayCurrency: 'USD',
     primaryGoal: 'Generate leads',
     adLanguage: 'English',
     targetLocations: '',
@@ -41,6 +43,7 @@ export default function NewClientForm() {
         website: '',
         industry: '',
         monthlyBudget: '',
+        displayCurrency: 'USD',
         primaryGoal: 'Generate leads',
         adLanguage: 'English',
         targetLocations: '',
@@ -69,7 +72,15 @@ export default function NewClientForm() {
       <input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} />
       <label>{t('newClient.industry')}</label>
       <input value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })} />
-      <label>{t('newClient.monthlyBudget')}</label>
+      <label>{tr('Currency')}</label>
+      <select value={form.displayCurrency} onChange={(e) => setForm({ ...form, displayCurrency: e.target.value })}>
+        {DISPLAY_CURRENCIES.map((c) => (
+          <option key={c} value={c}>
+            {c}
+          </option>
+        ))}
+      </select>
+      <label>{t('newClient.monthlyBudget')} ({form.displayCurrency})</label>
       <input
         type="number"
         min="0"

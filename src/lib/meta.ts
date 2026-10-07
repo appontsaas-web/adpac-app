@@ -1,3 +1,4 @@
+import { fxRateToUsd as sharedFxRateToUsd } from './fx';
 // ---------------------------------------------------------------------------
 // Meta (Facebook + Instagram) Marketing API integration
 //
@@ -193,23 +194,8 @@ export async function verifyAdAccountAccess(metaAdAccountId: string, accessToken
 // coupling point between otherwise-unrelated files). Only fixed/pegged
 // rates belong here — a currency not listed falls back to 1 (assumed USD)
 // with a console warning rather than silently mis-converting.
-const FX_RATE_TO_USD: Record<string, number> = {
-  USD: 1,
-  SAR: 1 / 3.75, // Saudi Riyal — pegged to USD since 1986
-  AED: 1 / 3.6725, // UAE Dirham — pegged to USD since 1997
-};
-
 function fxRateToUsd(currencyCode: string | null | undefined): number {
-  if (!currencyCode) return 1;
-  const rate = FX_RATE_TO_USD[currencyCode.toUpperCase()];
-  if (rate === undefined) {
-    console.warn(
-      `meta: no FX rate configured for currency "${currencyCode}" — treating as USD 1:1. ` +
-        `Add its real rate to FX_RATE_TO_USD in lib/meta.ts.`
-    );
-    return 1;
-  }
-  return rate;
+  return sharedFxRateToUsd(currencyCode, 'meta');
 }
 
 // ---------------------------------------------------------------------------

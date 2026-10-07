@@ -623,7 +623,8 @@ export const AR_STRINGS: Record<string, string> = {
   "Abs. top of page rate": "معدل الظهور في أعلى الصفحة المطلق",
   "CPM": "تكلفة الألف ظهور (CPM)",
   "Avg. daily reach": "متوسط الوصول اليومي",
-  "Clicks (swipes)": "النقرات (السحبات)"
+  "Clicks (swipes)": "النقرات (السحبات)",
+  "Currency": "العملة"
 };
 
 export function trString(locale: string, en: string, vars?: Record<string, string | number>): string {
