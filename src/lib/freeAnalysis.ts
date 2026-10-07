@@ -90,7 +90,7 @@ async function triggerSync(platform: PlatformKey, accountId: string) {
 }
 
 /** Runs sync -> numbers -> Claude -> stores the 48h report. One analysis per client, ever. */
-export async function runFreeAnalysis(clientId: string): Promise<void> {
+export async function runFreeAnalysis(clientId: string, locale: 'en' | 'ar' = 'en'): Promise<void> {
   const existing = await db.freeAnalysis.findUnique({ where: { clientId } });
   if (existing && existing.status !== 'PENDING' && existing.status !== 'FAILED') return;
 
@@ -153,7 +153,7 @@ export async function runFreeAnalysis(clientId: string): Promise<void> {
     const messages: Anthropic.MessageParam[] = [{ role: 'user', content: JSON.stringify(data) }];
     let report: FreeAnalysisReport | null = null;
     for (let attempt = 1; attempt <= 3 && !report; attempt++) {
-      const msg = await anthropic.messages.create({ model: 'claude-sonnet-4-6', max_tokens: 3000, system: SYSTEM_PROMPT, messages });
+      const msg = await anthropic.messages.create({ model: 'claude-sonnet-4-6', max_tokens: 3000, system: locale === 'ar' ? SYSTEM_PROMPT + ' Write ALL human-readable string values (headline, summary, titles, details, actions, outcomes) in clear professional Modern Standard Arabic; keep JSON keys and the severity enum values in English; keep platform and metric names like CTR, ROAS, CPC in Latin letters.' : SYSTEM_PROMPT, messages });
       const block = msg.content.find((b) => b.type === 'text');
       if (!block || block.type !== 'text') continue;
       try {

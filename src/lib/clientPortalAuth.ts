@@ -51,15 +51,20 @@ export async function sendPortalLoginLink(clientId: string): Promise<{ sent: boo
   const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3010';
   const link = `${baseUrl}/api/portal/verify?token=${raw}`;
 
+  const ar = client.portalContactLocale === 'ar';
+  const first = client.portalContactName ? client.portalContactName.split(' ')[0] : '';
   await sendMail({
     to: client.portalContactEmail,
-    subject: `Sign in to your AdPac portal — ${client.name}`,
-    text:
-      `Hi${client.portalContactName ? ` ${client.portalContactName.split(' ')[0]}` : ''},\n\n` +
-      `Click the link below to sign in to your AdPac client portal. This link expires in ${LOGIN_TOKEN_TTL_MINUTES} minutes and can only be used once:\n\n` +
-      `${link}\n\n` +
-      `If you didn't request this, you can safely ignore this email.\n\n` +
-      `— The AdPac team`,
+    subject: ar ? `تسجيل الدخول إلى بوابة AdPac — ${client.name}` : `Sign in to your AdPac portal — ${client.name}`,
+    text: ar
+      ? `مرحباً${first ? ` ${first}` : ''}،\n\n` +
+        `اضغط على الرابط أدناه لتسجيل الدخول إلى بوابة عملاء AdPac. تنتهي صلاحية الرابط خلال ${LOGIN_TOKEN_TTL_MINUTES} دقيقة ويمكن استخدامه مرة واحدة فقط:\n\n` +
+        `${link}\n\n` +
+        `إذا لم تطلب ذلك، يمكنك تجاهل هذه الرسالة.\n\n— فريق AdPac`
+      : `Hi${first ? ` ${first}` : ''},\n\n` +
+        `Click the link below to sign in to your AdPac client portal. This link expires in ${LOGIN_TOKEN_TTL_MINUTES} minutes and can only be used once:\n\n` +
+        `${link}\n\n` +
+        `If you didn't request this, you can safely ignore this email.\n\n— The AdPac team`,
   });
 
   return { sent: true };

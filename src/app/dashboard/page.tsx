@@ -27,6 +27,9 @@ export default async function DashboardPage() {
       industry: true,
       displayCurrency: true,
       validUntil: true,
+      agent: true,
+      isFreeAnalysis: true,
+      freeAnalysis: { select: { status: true, expiresAt: true } },
       googleAdsAccounts: { select: { status: true } },
       metaAdAccounts: { select: { status: true } },
       snapAdAccounts: { select: { status: true } },
@@ -85,7 +88,22 @@ export default async function DashboardPage() {
       if (days < 0) issues.push(tr('Account validity expired'));
       else if (days <= 14) issues.push(tr('Account validity ends in {n} day(s)', { n: days }));
     }
+    if (c.isFreeAnalysis) {
+      const fa = c.freeAnalysis;
+      if (!fa || fa.status === 'PENDING') issues.length = 0;
+    }
+    const prospectLabel = c.isFreeAnalysis
+      ? !c.freeAnalysis || c.freeAnalysis.status === 'PENDING'
+        ? (accounts.length ? tr('Free analysis: account connected') : tr('Free analysis: signed up, not connected'))
+        : c.freeAnalysis.status === 'READY'
+        ? tr('Free analysis: report live')
+        : c.freeAnalysis.status === 'EXPIRED'
+        ? tr('Free analysis: expired (follow up!)')
+        : tr('Free analysis: {s}', { s: c.freeAnalysis.status.toLowerCase() })
+      : null;
     return {
+      agent: c.agent,
+      prospectLabel,
       id: c.id,
       name: c.name,
       industry: c.industry ?? t('home.noIndustry'),

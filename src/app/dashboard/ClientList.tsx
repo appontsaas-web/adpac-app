@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n/LocaleProvider';
+import { AGENTS, isAgentKey } from '@/lib/agents';
 
 export interface ClientRow {
   id: string;
@@ -15,6 +16,8 @@ export interface ClientRow {
   pending: number;
   recharge: number;
   issues: string[];
+  agent: string | null;
+  prospectLabel: string | null;
 }
 
 // Client list with search, an "Needs attention" filter and sorting. Rows are
@@ -70,6 +73,12 @@ export default function ClientList({ rows, isAdmin }: { rows: ClientRow[]; isAdm
                 {c.industry} · {c.connected ? tr('Connected') : t('home.notConnected')} · {t('home.campaignCount', { n: c.campaigns })} ·{' '}
                 {tr('This month')}: <strong style={{ color: 'var(--text)' }}>{c.spendLabel}</strong>
               </div>
+              {(c.prospectLabel || isAgentKey(c.agent)) && (
+                <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {c.prospectLabel && <span className="badge badge-approved">{c.prospectLabel}</span>}
+                  {isAgentKey(c.agent) && <span className="badge badge-approved">{tr('Agent')}: {AGENTS[c.agent].name}</span>}
+                </div>
+              )}
               {c.issues.length > 0 && (
                 <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {c.issues.map((i) => (

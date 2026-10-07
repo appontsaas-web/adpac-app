@@ -108,6 +108,9 @@ model Client {
   // email and can't sign in.
   portalContactLocale String @default("en") // language for the client's portal + emails: "en" | "ar"
   displayCurrency     String? // ISO code (SAR, AED...) clients see money in. Stored amounts stay USD cents; converted at display time (lib/currency.ts). Null = USD.
+  searchConsoleSites SearchConsoleSite[]
+  merchantAccounts   MerchantCenterAccount[]
+  shopifyStores      ShopifyStore[]
   agent              String? // key of the AdPac agent assigned to this client (lib/agents.ts): jack | sara | adam | lina | karim | maya
   agentMessages      AgentMessage[]
   portalReminders    PortalReminder[]
@@ -1282,4 +1285,53 @@ model PortalReminder {
   sentAt    DateTime @default(now())
 
   @@unique([clientId, kind, periodKey])
+}
+
+// A connected Google Search Console property (read-only, webmasters.readonly).
+// Same trust model as GA4: the client adds AdPac's Google login as a user on
+// their Search Console property, then the operator enters the property
+// exactly as Search Console shows it: "https://example.com/" (URL prefix)
+// or "sc-domain:example.com" (Domain property).
+model SearchConsoleSite {
+  id                    String   @id @default(cuid())
+  clientId              String
+  client                Client   @relation(fields: [clientId], references: [id])
+  siteUrl               String
+  refreshTokenEncrypted String
+  connectedAt           DateTime @default(now())
+  status                String   @default("connected") // connected | revoked | error
+
+  @@index([clientId])
+}
+
+// A connected Google Merchant Center account (Merchant API v1, read-only use:
+// product statuses + shopping performance). The client adds AdPac's Google
+// login as a user on their Merchant Center account; the operator enters the
+// numeric Merchant ID shown top-right in Merchant Center.
+model MerchantCenterAccount {
+  id                    String   @id @default(cuid())
+  clientId              String
+  client                Client   @relation(fields: [clientId], references: [id])
+  merchantId            String
+  refreshTokenEncrypted String
+  connectedAt           DateTime @default(now())
+  status                String   @default("connected") // connected | revoked | error
+
+  @@index([clientId])
+}
+
+// A connected Shopify store (custom/public app installed via OAuth, read-only
+// scopes: read_orders, read_products). accessTokenEncrypted is Shopify's
+// permanent offline Admin API token, encrypted with lib/crypto.ts.
+model ShopifyStore {
+  id                   String   @id @default(cuid())
+  clientId             String
+  client               Client   @relation(fields: [clientId], references: [id])
+  shop                 String   // "my-store.myshopify.com"
+  accessTokenEncrypted String
+  scope                String?
+  connectedAt          DateTime @default(now())
+  status               String   @default("connected") // connected | revoked | error
+
+  @@index([clientId])
 }

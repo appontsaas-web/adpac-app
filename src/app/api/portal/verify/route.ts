@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { absoluteUrl } from '@/lib/baseUrl';
 import { verifyPortalLoginToken, setPortalSessionCookie } from '@/lib/clientPortalAuth';
 
 // GET /api/portal/verify?token=...
@@ -7,12 +8,11 @@ import { verifyPortalLoginToken, setPortalSessionCookie } from '@/lib/clientPort
 // into the portal.
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('token');
-  const baseUrl = req.nextUrl.origin;
-  if (!token) return NextResponse.redirect(`${baseUrl}/portal?error=missing-token`);
+  if (!token) return NextResponse.redirect(absoluteUrl('/portal?error=missing-token'));
 
   const result = await verifyPortalLoginToken(token);
-  if (!result) return NextResponse.redirect(`${baseUrl}/portal?error=invalid-or-expired`);
+  if (!result) return NextResponse.redirect(absoluteUrl('/portal?error=invalid-or-expired'));
 
   setPortalSessionCookie(result.sessionToken);
-  return NextResponse.redirect(`${baseUrl}/portal`);
+  return NextResponse.redirect(absoluteUrl('/portal'));
 }

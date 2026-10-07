@@ -15,14 +15,21 @@ import TargetingForm from './TargetingForm';
 import PortalContactForm from './PortalContactForm';
 import ClientLocaleForm from './ClientLocaleForm';
 import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
-import { getLocale, getT } from '@/lib/i18n/server';
+import { getLocale, getT, getTr } from '@/lib/i18n/server';
 import { formatMoney, formatDate } from '@/lib/i18n/format';
 import ReportingDashboard from './ReportingDashboard';
 import SummaryReportDashboard from './SummaryReportDashboard';
+import DataFreshnessCard, { type FreshnessRow } from './DataFreshnessCard';
 import KeywordAdPerformanceCard from './KeywordAdPerformanceCard';
 import BudgetPacingCard from './BudgetPacingCard';
 import GA4ReportingCard from './GA4ReportingCard';
 import ConnectGA4Button from './ConnectGA4Button';
+import SearchConsoleCard from './SearchConsoleCard';
+import MerchantCenterCard from './MerchantCenterCard';
+import ShopifyCard from './ShopifyCard';
+import ConnectShopifyButton from './ConnectShopifyButton';
+import ConnectMerchantCenterButton from './ConnectMerchantCenterButton';
+import ConnectSearchConsoleButton from './ConnectSearchConsoleButton';
 import ConnectGTMButton from './ConnectGTMButton';
 import TagManagerSection from './TagManagerSection';
 import ConnectBusinessProfileButton from './ConnectBusinessProfileButton';
@@ -88,6 +95,9 @@ export default async function ClientPage({
       include: {
         googleAdsAccounts: true,
         analyticsProperties: true,
+        searchConsoleSites: true,
+        merchantAccounts: true,
+        shopifyStores: true,
         tagManagerContainers: true,
         businessProfileAccounts: {
           include: {
@@ -323,6 +333,7 @@ export default async function ClientPage({
   }
 
   const t = getT();
+  const tr = getTr();
   const locale = getLocale();
   const tabs: DashboardTab[] = [];
 
@@ -394,10 +405,28 @@ export default async function ClientPage({
   });
 
   if (canReporting) {
+    const freshness: FreshnessRow[] = [];
+    const [gMax, mMax, sMax, tMax] = await Promise.all([
+      client.googleAdsAccounts.length ? db.dailyMetric.aggregate({ _max: { date: true }, where: { campaign: { clientId: client.id } } }) : null,
+      client.metaAdAccounts.length ? db.metaDailyMetric.aggregate({ _max: { date: true }, where: { campaign: { adAccount: { clientId: client.id } } } }) : null,
+      client.snapAdAccounts.length ? db.snapDailyMetric.aggregate({ _max: { date: true }, where: { campaign: { adAccount: { clientId: client.id } } } }) : null,
+      client.tiktokAdAccounts.length ? db.tikTokDailyMetric.aggregate({ _max: { date: true }, where: { campaign: { adAccount: { clientId: client.id } } } }) : null,
+    ]);
+    const worst = (accts: { status: string }[]) => (accts.every((a) => a.status === 'connected') ? 'connected' : 'error');
+    if (gMax) freshness.push({ platform: 'google', label: 'Google Ads', accountIds: client.googleAdsAccounts.map((a) => a.id), dataThrough: gMax._max.date?.toISOString() ?? null, status: worst(client.googleAdsAccounts) });
+    if (mMax) freshness.push({ platform: 'meta', label: 'Meta Ads', accountIds: client.metaAdAccounts.map((a) => a.id), dataThrough: mMax._max.date?.toISOString() ?? null, status: worst(client.metaAdAccounts) });
+    if (sMax) freshness.push({ platform: 'snapchat', label: 'Snapchat Ads', accountIds: client.snapAdAccounts.map((a) => a.id), dataThrough: sMax._max.date?.toISOString() ?? null, status: worst(client.snapAdAccounts) });
+    if (tMax) freshness.push({ platform: 'tiktok', label: 'TikTok Ads', accountIds: client.tiktokAdAccounts.map((a) => a.id), dataThrough: tMax._max.date?.toISOString() ?? null, status: worst(client.tiktokAdAccounts) });
+
     tabs.push({
       id: 'summary',
       label: t('clientPage.tabSummary'),
-      content: <SummaryReportDashboard clientId={client.id} />,
+      content: (
+        <>
+          <DataFreshnessCard rows={freshness} />
+          <SummaryReportDashboard clientId={client.id} />
+        </>
+      ),
     });
   }
 
@@ -445,6 +474,54 @@ export default async function ClientPage({
             )}
           </div>
           {ga4Property && <GA4ReportingCard clientId={client.id} />}
+
+          <div className="card">
+            <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>{tr('Google Search Console')}</h2>
+            {(client as any).searchConsoleSites?.[0] ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <p style={{ margin: 0 }}>{tr('Connected property')}: <code>{(client as any).searchConsoleSites[0].siteUrl}</code></p>
+                <form action="/api/search-console/disconnect" method="POST">
+                  <input type="hidden" name="clientId" value={client.id} />
+                  <button type="submit" className="btn btn-secondary">{tr('Disconnect')}</button>
+                </form>
+              </div>
+            ) : (
+              <ConnectSearchConsoleButton clientId={client.id} />
+            )}
+          </div>
+          {(client as any).searchConsoleSites?.[0] && <SearchConsoleCard clientId={client.id} />}
+
+          <div className="card">
+            <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>{tr('Google Merchant Center')}</h2>
+            {(client as any).merchantAccounts?.[0] ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <p style={{ margin: 0 }}>{tr('Connected account')}: <code>{(client as any).merchantAccounts[0].merchantId}</code></p>
+                <form action="/api/merchant-center/disconnect" method="POST">
+                  <input type="hidden" name="clientId" value={client.id} />
+                  <button type="submit" className="btn btn-secondary">{tr('Disconnect')}</button>
+                </form>
+              </div>
+            ) : (
+              <ConnectMerchantCenterButton clientId={client.id} />
+            )}
+          </div>
+          {(client as any).merchantAccounts?.[0] && <MerchantCenterCard clientId={client.id} />}
+
+          <div className="card">
+            <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>Shopify</h2>
+            {(client as any).shopifyStores?.[0] ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <p style={{ margin: 0 }}>{tr('Connected store')}: <code>{(client as any).shopifyStores[0].shop}</code></p>
+                <form action="/api/shopify/disconnect" method="POST">
+                  <input type="hidden" name="clientId" value={client.id} />
+                  <button type="submit" className="btn btn-secondary">{tr('Disconnect')}</button>
+                </form>
+              </div>
+            ) : (
+              <ConnectShopifyButton clientId={client.id} />
+            )}
+          </div>
+          {(client as any).shopifyStores?.[0] && <ShopifyCard clientId={client.id} />}
         </>
       ),
     });
