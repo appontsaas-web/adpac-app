@@ -29,8 +29,6 @@ function baseUrl(): string {
   return process.env.NEXTAUTH_URL ?? `http://localhost:${process.env.PORT ?? 3010}`;
 }
 
-import { runPortalReminders } from './portalReminders';
-
 async function runCycle() {
   const secret = process.env.SYNC_SECRET;
   if (!secret) {
@@ -44,7 +42,8 @@ async function runCycle() {
   const url = baseUrl();
 
   try {
-    const r = await runPortalReminders();
+    const res = await fetch(`${url}/api/portal/reminders`, { method: 'POST', headers: { 'x-sync-secret': secret } });
+    const r = await res.json().catch(() => ({}));
     if (r.sent > 0) console.log(`[scheduler] portal reminders sent: ${r.sent}`);
   } catch (err: any) {
     console.error('[scheduler] portal reminders failed:', err.message);
