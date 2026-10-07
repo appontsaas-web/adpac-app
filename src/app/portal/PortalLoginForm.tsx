@@ -1,8 +1,10 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 import { useState } from 'react';
 
 export default function PortalLoginForm() {
+  const { tr } = useI18n();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -18,9 +20,9 @@ export default function PortalLoginForm() {
         body: JSON.stringify({ email }),
       });
       const d = await res.json().catch(() => ({}));
-      setMessage(d.message ?? 'If that email is registered, a sign-in link is on its way.');
+      setMessage(d.message ?? tr("If that email is registered, a sign-in link is on its way."));
     } catch {
-      setMessage('Something went wrong — please try again.');
+      setMessage(tr("Something went wrong — please try again."));
     } finally {
       setLoading(false);
     }
@@ -28,23 +30,23 @@ export default function PortalLoginForm() {
 
   return (
     <div className="container" style={{ maxWidth: 380, paddingTop: 120 }}>
-      <h1 style={{ fontSize: '1.5rem', marginBottom: 24 }}>AdPac Client Portal</h1>
+      <h1 style={{ fontSize: '1.5rem', marginBottom: 24 }}>{tr("AdPac Client Portal")}</h1>
       <form onSubmit={handleSubmit} className="card">
-        <label>Email</label>
+        <label>{tr("Email")}</label>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@yourcompany.com"
+          placeholder={tr("you@yourcompany.com")}
           required
         />
         <button className="btn" type="submit" disabled={loading} style={{ width: '100%', marginTop: 12 }}>
-          {loading ? 'Sending…' : 'Email me a sign-in link'}
+          {loading ? tr("Sending…") : tr("Email me a sign-in link")}
         </button>
         {message && <p style={{ fontSize: '0.85rem', color: 'var(--accent2, #22d3c9)', marginTop: 10 }}>{message}</p>}
       </form>
       <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem' }}>
-        No password needed — we'll email you a secure link to sign in.
+        {tr("No password needed — we'll email you a secure link to sign in.")}
       </p>
     </div>
   );

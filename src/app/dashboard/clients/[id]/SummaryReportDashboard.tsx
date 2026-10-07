@@ -65,7 +65,7 @@ const PLATFORM_LABELS: Record<string, string> = {
 // computes (via the platform's own DailyMetric-family table) rather than
 // re-deriving anything, so this can never drift from what those tabs show.
 export default function SummaryReportDashboard({ clientId }: { clientId: string }) {
-  const { money, t, num } = useI18n();
+  const { tr, money, t, num } = useI18n();
   const [days, setDays] = useState(30);
   const [data, setData] = useState<SummaryResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -83,7 +83,7 @@ export default function SummaryReportDashboard({ clientId }: { clientId: string 
       }
       setData(await res.json());
     } catch (err: any) {
-      setError(err.message ?? 'Failed to load summary — network error');
+      setError(err.message ?? tr("Failed to load summary — network error"));
     } finally {
       setLoading(false);
     }
@@ -106,7 +106,7 @@ export default function SummaryReportDashboard({ clientId }: { clientId: string 
 
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-          <h2 style={{ fontSize: '1.1rem' }}>Cross-platform summary</h2>
+          <h2 style={{ fontSize: '1.1rem' }}>{tr("Cross-platform summary")}</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ display: 'flex', border: '1px solid var(--card-border)', borderRadius: 8, overflow: 'hidden' }}>
               {RANGES.map((r) => (
@@ -127,14 +127,14 @@ export default function SummaryReportDashboard({ clientId }: { clientId: string 
                 </button>
               ))}
             </div>
-            <button className="btn btn-secondary" onClick={handleExport} title="Download an AdPac-branded PDF combining every connected platform">
-              Export PDF
+            <button className="btn btn-secondary" onClick={handleExport} title={tr("Download an AdPac-branded PDF combining every connected platform")}>
+              {tr("Export PDF")}
             </button>
           </div>
         </div>
 
         {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: 10 }}>{error}</p>}
-        {loading && !data && <p style={{ color: 'var(--text-dim)' }}>Loading…</p>}
+        {loading && !data && <p style={{ color: 'var(--text-dim)' }}>{tr("Loading…")}</p>}
 
         {data && (
           <>
@@ -150,17 +150,17 @@ export default function SummaryReportDashboard({ clientId }: { clientId: string 
               <KpiCard label={t('metrics.roas')} value={data.totals.costCents > 0 ? `${data.totals.roas.toFixed(2)}x` : '—'} />
             </div>
 
-            <h3 style={{ fontSize: '0.95rem', marginBottom: 10 }}>Delivery by platform</h3>
+            <h3 style={{ fontSize: '0.95rem', marginBottom: 10 }}>{tr("Delivery by platform")}</h3>
             <div style={{ overflowX: 'auto', marginBottom: 24 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--card-border)', textAlign: 'left', color: 'var(--text-dim)' }}>
-                    <th style={{ padding: '8px 6px' }}>Platform</th>
-                    <th style={{ padding: '8px 6px' }}>Campaigns</th>
-                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>Spend</th>
-                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>Clicks</th>
-                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>Impr.</th>
-                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>Conversions</th>
+                    <th style={{ padding: '8px 6px' }}>{tr("Platform")}</th>
+                    <th style={{ padding: '8px 6px' }}>{tr("Campaigns")}</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Spend")}</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Clicks")}</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Impr.")}</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Conversions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -178,9 +178,9 @@ export default function SummaryReportDashboard({ clientId }: { clientId: string 
               </table>
             </div>
 
-            <h3 style={{ fontSize: '0.95rem', marginBottom: 10 }}>Recent AI insights</h3>
+            <h3 style={{ fontSize: '0.95rem', marginBottom: 10 }}>{tr("Recent AI insights")}</h3>
             {data.insights.length === 0 ? (
-              <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>No AI insights generated yet for this client.</p>
+              <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>{tr("No AI insights generated yet for this client.")}</p>
             ) : (
               <div>
                 {data.insights.map((i) => (

@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 import { useState, useEffect, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -84,6 +85,7 @@ function sum(rows: DailyPoint[], key: keyof DailyPoint): number {
 // Google Ads' own reporting can't show since it only knows about the click,
 // not what happened after it.
 export default function GA4ReportingCard({ clientId }: { clientId: string }) {
+  const { tr } = useI18n();
   const [days, setDays] = useState(30);
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [funnel, setFunnel] = useState<FunnelResponse | null>(null);
@@ -113,7 +115,7 @@ export default function GA4ReportingCard({ clientId }: { clientId: string }) {
         setGrowth(await growthRes.json());
       }
     } catch (err: any) {
-      setError(err.message ?? 'Failed to load GA4 data — network error');
+      setError(err.message ?? tr("Failed to load GA4 data — network error"));
     } finally {
       setLoading(false);
     }
@@ -140,7 +142,7 @@ export default function GA4ReportingCard({ clientId }: { clientId: string }) {
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
-        <h2 style={{ fontSize: '1.1rem' }}>Website analytics (GA4)</h2>
+        <h2 style={{ fontSize: '1.1rem' }}>{tr("Website analytics (GA4)")}</h2>
         <div style={{ display: 'flex', border: '1px solid var(--card-border)', borderRadius: 8, overflow: 'hidden' }}>
           {RANGES.map((r) => (
             <button
@@ -163,10 +165,10 @@ export default function GA4ReportingCard({ clientId }: { clientId: string }) {
       </div>
 
       {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: 10 }}>{error}</p>}
-      {loading && !data && <p style={{ color: 'var(--text-dim)' }}>Loading…</p>}
+      {loading && !data && <p style={{ color: 'var(--text-dim)' }}>{tr("Loading…")}</p>}
 
       {data && data.daily.length === 0 && (
-        <p style={{ color: 'var(--text-dim)' }}>No GA4 data yet for this period.</p>
+        <p style={{ color: 'var(--text-dim)' }}>{tr("No GA4 data yet for this period.")}</p>
       )}
 
       {data && data.daily.length > 0 && (
@@ -210,8 +212,7 @@ export default function GA4ReportingCard({ clientId }: { clientId: string }) {
           </div>
           {growth && growth.ecommerce.transactions === 0 && (
             <p style={{ color: 'var(--text-dim)', fontSize: '0.78rem', marginBottom: 20 }}>
-              No ecommerce transactions reported for this period — either nothing sold, or this GA4 property doesn't
-              have ecommerce tracking configured.
+              {tr("No ecommerce transactions reported for this period — either nothing sold, or this GA4 property doesn't have ecommerce tracking configured.")}
             </p>
           )}
 
@@ -231,9 +232,9 @@ export default function GA4ReportingCard({ clientId }: { clientId: string }) {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--card-border)', textAlign: 'left', color: 'var(--text-dim)' }}>
-                    <th style={{ padding: '8px 6px' }}>Channel</th>
-                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>Sessions</th>
-                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>Conversions</th>
+                    <th style={{ padding: '8px 6px' }}>{tr("Channel")}</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Sessions")}</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Conversions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -251,15 +252,15 @@ export default function GA4ReportingCard({ clientId }: { clientId: string }) {
 
           {growth && growth.sourceMedium.length > 0 && (
             <div style={{ marginTop: 20 }}>
-              <h3 style={{ fontSize: '0.95rem', marginBottom: 12 }}>Traffic by source / medium</h3>
+              <h3 style={{ fontSize: '0.95rem', marginBottom: 12 }}>{tr("Traffic by source / medium")}</h3>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--card-border)', textAlign: 'left', color: 'var(--text-dim)' }}>
-                      <th style={{ padding: '8px 6px' }}>Source / medium</th>
-                      <th style={{ padding: '8px 6px', textAlign: 'right' }}>Sessions</th>
-                      <th style={{ padding: '8px 6px', textAlign: 'right' }}>Users</th>
-                      <th style={{ padding: '8px 6px', textAlign: 'right' }}>Conversions</th>
+                      <th style={{ padding: '8px 6px' }}>{tr("Source / medium")}</th>
+                      <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Sessions")}</th>
+                      <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Users")}</th>
+                      <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Conversions")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -279,16 +280,16 @@ export default function GA4ReportingCard({ clientId }: { clientId: string }) {
 
           {funnel && funnel.landingPages.length > 0 && (
             <div style={{ marginTop: 24 }}>
-              <h3 style={{ fontSize: '0.95rem', marginBottom: 12 }}>Landing pages</h3>
+              <h3 style={{ fontSize: '0.95rem', marginBottom: 12 }}>{tr("Landing pages")}</h3>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--card-border)', textAlign: 'left', color: 'var(--text-dim)' }}>
-                      <th style={{ padding: '8px 6px' }}>Landing page</th>
-                      <th style={{ padding: '8px 6px', textAlign: 'right' }}>Sessions</th>
-                      <th style={{ padding: '8px 6px', textAlign: 'right' }}>Engaged</th>
-                      <th style={{ padding: '8px 6px', textAlign: 'right' }}>Bounce rate</th>
-                      <th style={{ padding: '8px 6px', textAlign: 'right' }}>Conversions</th>
+                      <th style={{ padding: '8px 6px' }}>{tr("Landing page")}</th>
+                      <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Sessions")}</th>
+                      <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Engaged")}</th>
+                      <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Bounce rate")}</th>
+                      <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Conversions")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -311,13 +312,13 @@ export default function GA4ReportingCard({ clientId }: { clientId: string }) {
 
           {funnel && funnel.events.length > 0 && (
             <div style={{ marginTop: 24 }}>
-              <h3 style={{ fontSize: '0.95rem', marginBottom: 12 }}>Events &amp; goal completions</h3>
+              <h3 style={{ fontSize: '0.95rem', marginBottom: 12 }}>{tr("Events & goal completions")}</h3>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--card-border)', textAlign: 'left', color: 'var(--text-dim)' }}>
-                      <th style={{ padding: '8px 6px' }}>Event</th>
-                      <th style={{ padding: '8px 6px', textAlign: 'right' }}>Count</th>
+                      <th style={{ padding: '8px 6px' }}>{tr("Event")}</th>
+                      <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Count")}</th>
                     </tr>
                   </thead>
                   <tbody>

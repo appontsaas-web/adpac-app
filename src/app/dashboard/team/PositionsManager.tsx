@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { METRIC_CATALOG, METRIC_PLATFORMS, type MetricPlatform } from '@/lib/metricCatalog';
@@ -47,6 +48,7 @@ const emptyForm = {
 // EDIT) plus this toggle. Creating/editing/deleting/marking paid an invoice
 // is never covered by any position — always admin-only.
 export default function PositionsManager({ positions }: { positions: Position[] }) {
+  const { tr } = useI18n();
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -71,14 +73,14 @@ export default function PositionsManager({ positions }: { positions: Position[] 
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to create position');
+        setError(d.error ?? tr("Failed to create position"));
         return;
       }
       setForm(emptyForm);
       setCreating(false);
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to create position — network error');
+      setError(err.message ?? tr("Failed to create position — network error"));
     } finally {
       setSaving(false);
     }
@@ -113,13 +115,13 @@ export default function PositionsManager({ positions }: { positions: Position[] 
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to save position');
+        setError(d.error ?? tr("Failed to save position"));
         return;
       }
       setEditingId(null);
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to save position — network error');
+      setError(err.message ?? tr("Failed to save position — network error"));
     } finally {
       setSaving(false);
     }
@@ -133,12 +135,12 @@ export default function PositionsManager({ positions }: { positions: Position[] 
       const res = await fetch(`/api/positions/${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to delete position');
+        setError(d.error ?? tr("Failed to delete position"));
         return;
       }
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to delete position — network error');
+      setError(err.message ?? tr("Failed to delete position — network error"));
     } finally {
       setSaving(false);
     }
@@ -147,20 +149,19 @@ export default function PositionsManager({ positions }: { positions: Position[] 
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <h2 style={{ fontSize: '1.1rem' }}>Positions</h2>
+        <h2 style={{ fontSize: '1.1rem' }}>{tr("Positions")}</h2>
         <button className="btn btn-secondary" onClick={() => setCreating(!creating)}>
-          {creating ? 'Cancel' : '+ New position'}
+          {creating ? tr("Cancel") : tr("+ New position")}
         </button>
       </div>
       <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: 12 }}>
-        Reusable capability bundles. Assign one to a staff member below — it controls what they can do on clients
-        where they have Edit access. Finance is always admin-only, no matter what.
+        {tr("Reusable capability bundles. Assign one to a staff member below — it controls what they can do on clients where they have Edit access. Finance is always admin-only, no matter what.")}
       </p>
 
       {creating && (
         <form onSubmit={handleCreate} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--card-border)' }}>
-          <label>Position name</label>
-          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Campaign Manager" required />
+          <label>{tr("Position name")}</label>
+          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={tr("e.g. Campaign Manager")} required />
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
             <input
               type="checkbox"
@@ -168,7 +169,7 @@ export default function PositionsManager({ positions }: { positions: Position[] 
               onChange={(e) => setForm({ ...form, canManageCampaigns: e.target.checked })}
               style={{ width: 'auto', margin: 0 }}
             />
-            Manage campaigns (see the campaigns list, create drafts, approve & push live, discard — without this, campaigns are hidden entirely)
+            {tr("Manage campaigns (see the campaigns list, create drafts, approve & push live, discard — without this, campaigns are hidden entirely)")}
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
             <input
@@ -177,7 +178,7 @@ export default function PositionsManager({ positions }: { positions: Position[] 
               onChange={(e) => setForm({ ...form, canManageGoogleAds: e.target.checked })}
               style={{ width: 'auto', margin: 0 }}
             />
-            Manage Google Ads connection (connect/disconnect)
+            {tr("Manage Google Ads connection (connect/disconnect)")}
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 12 }}>
             <input
@@ -186,7 +187,7 @@ export default function PositionsManager({ positions }: { positions: Position[] 
               onChange={(e) => setForm({ ...form, canManageTargeting: e.target.checked })}
               style={{ width: 'auto', margin: 0 }}
             />
-            Manage targeting & recommendations (ad language/locations, apply Google's AI suggestions)
+            {tr("Manage targeting & recommendations (ad language/locations, apply Google's AI suggestions)")}
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 12 }}>
             <input
@@ -195,7 +196,7 @@ export default function PositionsManager({ positions }: { positions: Position[] 
               onChange={(e) => setForm({ ...form, canViewInvoices: e.target.checked })}
               style={{ width: 'auto', margin: 0 }}
             />
-            View, pay & download invoices (never create/edit/delete/mark paid — always admin-only)
+            {tr("View, pay & download invoices (never create/edit/delete/mark paid — always admin-only)")}
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 12 }}>
             <input
@@ -204,7 +205,7 @@ export default function PositionsManager({ positions }: { positions: Position[] 
               onChange={(e) => setForm({ ...form, canViewReporting: e.target.checked })}
               style={{ width: 'auto', margin: 0 }}
             />
-            View performance reporting (dashboard, metrics, audience breakdowns — view only, separate from campaigns)
+            {tr("View performance reporting (dashboard, metrics, audience breakdowns — view only, separate from campaigns)")}
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 12 }}>
             <input
@@ -213,7 +214,7 @@ export default function PositionsManager({ positions }: { positions: Position[] 
               onChange={(e) => setForm({ ...form, canManageTagManager: e.target.checked })}
               style={{ width: 'auto', margin: 0 }}
             />
-            Manage Tag Manager (connect containers, request & approve tag deployments — writes to the client's live site)
+            {tr("Manage Tag Manager (connect containers, request & approve tag deployments — writes to the client's live site)")}
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 12 }}>
             <input
@@ -222,7 +223,7 @@ export default function PositionsManager({ positions }: { positions: Position[] 
               onChange={(e) => setForm({ ...form, canManageBusinessProfile: e.target.checked })}
               style={{ width: 'auto', margin: 0 }}
             />
-            Manage Business Profile (connect Google Business Profile, sync branches, approve review replies & insights)
+            {tr("Manage Business Profile (connect Google Business Profile, sync branches, approve review replies & insights)")}
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 12 }}>
             <input
@@ -231,7 +232,7 @@ export default function PositionsManager({ positions }: { positions: Position[] 
               onChange={(e) => setForm({ ...form, canManageMeta: e.target.checked })}
               style={{ width: 'auto', margin: 0 }}
             />
-            Manage Meta Ads (connect Facebook/Instagram ad account, approve AI-proposed budget/pause changes)
+            {tr("Manage Meta Ads (connect Facebook/Instagram ad account, approve AI-proposed budget/pause changes)")}
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 12 }}>
             <input
@@ -240,7 +241,7 @@ export default function PositionsManager({ positions }: { positions: Position[] 
               onChange={(e) => setForm({ ...form, canManageSnapchat: e.target.checked })}
               style={{ width: 'auto', margin: 0 }}
             />
-            Manage Snapchat Ads (connect Snapchat ad account, manage campaigns)
+            {tr("Manage Snapchat Ads (connect Snapchat ad account, manage campaigns)")}
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 12 }}>
             <input
@@ -249,10 +250,10 @@ export default function PositionsManager({ positions }: { positions: Position[] 
               onChange={(e) => setForm({ ...form, canManageTikTok: e.target.checked })}
               style={{ width: 'auto', margin: 0 }}
             />
-            Manage TikTok Ads (connect TikTok ad account, manage campaigns)
+            {tr("Manage TikTok Ads (connect TikTok ad account, manage campaigns)")}
           </label>
           <button className="btn" type="submit" disabled={saving}>
-            {saving ? 'Creating…' : 'Create position'}
+            {saving ? tr("Creating…") : tr("Create position")}
           </button>
         </form>
       )}
@@ -260,22 +261,22 @@ export default function PositionsManager({ positions }: { positions: Position[] 
       {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: 10 }}>{error}</p>}
 
       {positions.length === 0 ? (
-        <p style={{ color: 'var(--text-dim)' }}>No positions yet. Staff without a position have no edit capabilities anywhere.</p>
+        <p style={{ color: 'var(--text-dim)' }}>{tr("No positions yet. Staff without a position have no edit capabilities anywhere.")}</p>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--card-border)', textAlign: 'left', color: 'var(--text-dim)' }}>
-              <th style={{ padding: '8px 6px' }}>Name</th>
-              <th style={{ padding: '8px 6px' }}>Campaigns</th>
-              <th style={{ padding: '8px 6px' }}>Google Ads</th>
-              <th style={{ padding: '8px 6px' }}>Targeting</th>
-              <th style={{ padding: '8px 6px' }}>Invoices</th>
-              <th style={{ padding: '8px 6px' }}>Reporting</th>
-              <th style={{ padding: '8px 6px' }}>Tag Manager</th>
-              <th style={{ padding: '8px 6px' }}>Business Profile</th>
-              <th style={{ padding: '8px 6px' }}>Meta Ads</th>
-              <th style={{ padding: '8px 6px' }}>Snapchat Ads</th>
-              <th style={{ padding: '8px 6px' }}>TikTok Ads</th>
+              <th style={{ padding: '8px 6px' }}>{tr("Name")}</th>
+              <th style={{ padding: '8px 6px' }}>{tr("Campaigns")}</th>
+              <th style={{ padding: '8px 6px' }}>{tr("Google Ads")}</th>
+              <th style={{ padding: '8px 6px' }}>{tr("Targeting")}</th>
+              <th style={{ padding: '8px 6px' }}>{tr("Invoices")}</th>
+              <th style={{ padding: '8px 6px' }}>{tr("Reporting")}</th>
+              <th style={{ padding: '8px 6px' }}>{tr("Tag Manager")}</th>
+              <th style={{ padding: '8px 6px' }}>{tr("Business Profile")}</th>
+              <th style={{ padding: '8px 6px' }}>{tr("Meta Ads")}</th>
+              <th style={{ padding: '8px 6px' }}>{tr("Snapchat Ads")}</th>
+              <th style={{ padding: '8px 6px' }}>{tr("TikTok Ads")}</th>
               <th style={{ padding: '8px 6px' }}></th>
             </tr>
           </thead>
@@ -368,10 +369,10 @@ export default function PositionsManager({ positions }: { positions: Position[] 
                   </td>
                   <td style={{ padding: '8px 6px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button className="btn" style={{ fontSize: '0.75rem', padding: '5px 10px', marginRight: 6 }} onClick={() => handleSaveEdit(p.id)} disabled={saving}>
-                      Save
+                      {tr("Save")}
                     </button>
                     <button className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '5px 10px' }} onClick={() => setEditingId(null)} disabled={saving}>
-                      Cancel
+                      {tr("Cancel")}
                     </button>
                   </td>
                 </tr>
@@ -393,15 +394,15 @@ export default function PositionsManager({ positions }: { positions: Position[] 
                       className="btn btn-secondary"
                       style={{ fontSize: '0.75rem', padding: '5px 10px', marginRight: 6 }}
                       onClick={() => setMetricsOpenId(metricsOpenId === p.id ? null : p.id)}
-                      title="Choose which dashboard metrics this position can see, per platform"
+                      title={tr("Choose which dashboard metrics this position can see, per platform")}
                     >
-                      {metricsOpenId === p.id ? 'Hide metrics' : 'Metrics'}
+                      {metricsOpenId === p.id ? tr("Hide metrics") : tr("Metrics")}
                     </button>
                     <button className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '5px 10px', marginRight: 6 }} onClick={() => openEdit(p)}>
-                      Edit
+                      {tr("Edit")}
                     </button>
                     <button className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '5px 10px' }} onClick={() => handleDelete(p.id, p.name)} disabled={saving}>
-                      Delete
+                      {tr("Delete")}
                     </button>
                   </td>
                 </tr>
@@ -414,7 +415,7 @@ export default function PositionsManager({ positions }: { positions: Position[] 
                 return (
                   <tr style={{ borderBottom: '1px solid var(--card-border)' }}>
                     <td colSpan={11} style={{ padding: '10px 6px 16px', background: 'var(--bg-alt)' }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: 6 }}>Metrics visible to "{pos.name}"</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: 6 }}>{tr("Metrics visible to \"")}{pos.name}"</div>
                       <MetricVisibilityPanel positionId={metricsOpenId} />
                     </td>
                   </tr>
@@ -435,6 +436,7 @@ export default function PositionsManager({ positions }: { positions: Position[] 
 // save leaving capabilities in a bad state the way there could be with the
 // position's own Save button, since every toggle here is independent.
 function MetricVisibilityPanel({ positionId }: { positionId: string }) {
+  const { tr } = useI18n();
   const [hidden, setHidden] = useState<Record<string, string[]> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -443,7 +445,7 @@ function MetricVisibilityPanel({ positionId }: { positionId: string }) {
     fetch(`/api/positions/${positionId}/metric-visibility`)
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error('Failed to load'))))
       .then(setHidden)
-      .catch(() => setError('Failed to load metric visibility'));
+      .catch(() => setError(tr("Failed to load metric visibility")));
   }, [positionId]);
 
   async function toggle(platform: MetricPlatform, metricKey: string, nowHidden: boolean) {
@@ -464,7 +466,7 @@ function MetricVisibilityPanel({ positionId }: { positionId: string }) {
       });
       if (!res.ok) throw new Error();
     } catch {
-      setError('Failed to save a metric toggle — reload and try again');
+      setError(tr("Failed to save a metric toggle — reload and try again"));
       // Revert the optimistic flip.
       setHidden((prev) => {
         if (!prev) return prev;
@@ -478,12 +480,12 @@ function MetricVisibilityPanel({ positionId }: { positionId: string }) {
   }
 
   if (error) return <p style={{ color: '#ef4444', fontSize: '0.78rem', margin: 0 }}>{error}</p>;
-  if (!hidden) return <p style={{ color: 'var(--text-dim)', fontSize: '0.78rem', margin: 0 }}>Loading…</p>;
+  if (!hidden) return <p style={{ color: 'var(--text-dim)', fontSize: '0.78rem', margin: 0 }}>{tr("Loading…")}</p>;
 
   return (
     <div>
       <p style={{ color: 'var(--text-dim)', fontSize: '0.78rem', margin: '0 0 10px' }}>
-        Uncheck a metric to hide it from this position's dashboard KPI cards. Everything is visible by default.
+        {tr("Uncheck a metric to hide it from this position's dashboard KPI cards. Everything is visible by default.")}
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
         {METRIC_PLATFORMS.map((platform) => (

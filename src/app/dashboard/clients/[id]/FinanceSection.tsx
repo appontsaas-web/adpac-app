@@ -55,7 +55,7 @@ export default function FinanceSection({
   invoices: Invoice[];
   requesterNames?: Record<string, string>;
 }) {
-  const { moneyUsd: money, t } = useI18n();
+  const { tr, moneyUsd: money, t } = useI18n();
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [amount, setAmount] = useState('');
@@ -89,7 +89,7 @@ export default function FinanceSection({
     setError(null);
     const amountCents = Math.round(Number(amount) * 100);
     if (!amountCents || amountCents <= 0) {
-      setError('Enter a valid amount greater than 0.');
+      setError(tr("Enter a valid amount greater than 0."));
       return;
     }
     setSaving(true);
@@ -108,7 +108,7 @@ export default function FinanceSection({
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to create invoice');
+        setError(d.error ?? tr("Failed to create invoice"));
         return;
       }
       setAmount('');
@@ -119,7 +119,7 @@ export default function FinanceSection({
       setCreating(false);
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to create invoice — network error');
+      setError(err.message ?? tr("Failed to create invoice — network error"));
     } finally {
       setSaving(false);
     }
@@ -166,13 +166,13 @@ export default function FinanceSection({
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to mark as paid');
+        setError(d.error ?? tr("Failed to mark as paid"));
         return;
       }
       closeRow();
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to mark as paid — network error');
+      setError(err.message ?? tr("Failed to mark as paid — network error"));
     } finally {
       setBusyId(null);
     }
@@ -190,12 +190,12 @@ export default function FinanceSection({
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to revert to unpaid');
+        setError(d.error ?? tr("Failed to revert to unpaid"));
         return;
       }
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to revert to unpaid — network error');
+      setError(err.message ?? tr("Failed to revert to unpaid — network error"));
     } finally {
       setBusyId(null);
     }
@@ -204,7 +204,7 @@ export default function FinanceSection({
   async function handleConfirmEdit(inv: Invoice) {
     const amountCents = Math.round(Number(editAmount) * 100);
     if (!amountCents || amountCents <= 0) {
-      setError('Enter a valid amount greater than 0.');
+      setError(tr("Enter a valid amount greater than 0."));
       return;
     }
     setBusyId(inv.id);
@@ -229,13 +229,13 @@ export default function FinanceSection({
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to save changes');
+        setError(d.error ?? tr("Failed to save changes"));
         return;
       }
       closeRow();
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to save changes — network error');
+      setError(err.message ?? tr("Failed to save changes — network error"));
     } finally {
       setBusyId(null);
     }
@@ -253,12 +253,12 @@ export default function FinanceSection({
       const res = await fetch(`/api/invoices/${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to delete invoice');
+        setError(d.error ?? tr("Failed to delete invoice"));
         return;
       }
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to delete invoice — network error');
+      setError(err.message ?? tr("Failed to delete invoice — network error"));
     } finally {
       setBusyId(null);
     }
@@ -269,25 +269,25 @@ export default function FinanceSection({
       <TokenBalanceCard clientId={clientId} isAdmin />
       <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
-        <h2 style={{ fontSize: '1.1rem' }}>Finance</h2>
+        <h2 style={{ fontSize: '1.1rem' }}>{tr("Finance")}</h2>
         <button className="btn btn-secondary" onClick={() => setCreating(!creating)}>
-          {creating ? 'Cancel' : '+ New invoice'}
+          {creating ? tr("Cancel") : tr("+ New invoice")}
         </button>
       </div>
 
       <div style={{ display: 'flex', gap: 20, marginBottom: 16, fontSize: '0.85rem' }}>
         <div>
-          <span style={{ color: 'var(--text-dim)' }}>Total paid: </span>
+          <span style={{ color: 'var(--text-dim)' }}>{tr("Total paid:")}{' '}</span>
           <strong>{money(totalPaidCents)}</strong>
         </div>
         <div>
-          <span style={{ color: 'var(--text-dim)' }}>Outstanding: </span>
+          <span style={{ color: 'var(--text-dim)' }}>{tr("Outstanding:")}{' '}</span>
           <strong style={{ color: outstandingCents > 0 ? '#f5a623' : 'inherit' }}>{money(outstandingCents)}</strong>
         </div>
         {pendingRequests.length > 0 && (
           <div>
             <span className="badge badge-pending">
-              {pendingRequests.length} recharge request{pendingRequests.length === 1 ? '' : 's'} pending
+              {pendingRequests.length} {tr("recharge request")}{pendingRequests.length === 1 ? '' : 's'} {tr("pending")}
             </span>
           </div>
         )}
@@ -295,13 +295,13 @@ export default function FinanceSection({
 
       {creating && (
         <form onSubmit={handleCreate} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--card-border)' }}>
-          <label>Invoice number (optional — auto-generated if left blank)</label>
+          <label>{tr("Invoice number (optional — auto-generated if left blank)")}</label>
           <input
             value={invoiceNumber}
             onChange={(e) => setInvoiceNumber(e.target.value)}
-            placeholder="e.g. INV-2026-014"
+            placeholder={tr("e.g. INV-2026-014")}
           />
-          <label>Amount (USD)</label>
+          <label>{tr("Amount (USD)")}</label>
           <input
             type="number"
             min="0"
@@ -310,27 +310,27 @@ export default function FinanceSection({
             onChange={(e) => setAmount(e.target.value)}
             placeholder="500.00"
           />
-          <label>Issue date</label>
+          <label>{tr("Issue date")}</label>
           <input
             type="date"
             value={issuedAtInput}
             onChange={(e) => setIssuedAtInput(e.target.value)}
           />
-          <label>Description</label>
+          <label>{tr("Description")}</label>
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="e.g. August 2026 ad spend + management fee"
+            placeholder={tr("e.g. August 2026 ad spend + management fee")}
           />
-          <label>Payment link (optional — e.g. a Stripe Payment Link you created)</label>
+          <label>{tr("Payment link (optional — e.g. a Stripe Payment Link you created)")}</label>
           <input
             type="url"
             value={paymentLink}
             onChange={(e) => setPaymentLink(e.target.value)}
-            placeholder="https://buy.stripe.com/..."
+            placeholder={tr("https://buy.stripe.com/...")}
           />
           <button className="btn" type="submit" disabled={saving}>
-            {saving ? 'Creating…' : 'Create invoice (unpaid)'}
+            {saving ? tr("Creating…") : tr("Create invoice (unpaid)")}
           </button>
         </form>
       )}
@@ -338,18 +338,18 @@ export default function FinanceSection({
       {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: 10 }}>{error}</p>}
 
       {invoices.length === 0 ? (
-        <p style={{ color: 'var(--text-dim)' }}>No invoices yet.</p>
+        <p style={{ color: 'var(--text-dim)' }}>{tr("No invoices yet.")}</p>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--card-border)', textAlign: 'left', color: 'var(--text-dim)' }}>
-                <th style={{ padding: '8px 6px' }}>Invoice</th>
-                <th style={{ padding: '8px 6px' }}>Description</th>
-                <th style={{ padding: '8px 6px' }}>Status</th>
-                <th style={{ padding: '8px 6px' }}>Issued</th>
-                <th style={{ padding: '8px 6px' }}>Paid</th>
-                <th style={{ padding: '8px 6px', textAlign: 'right' }}>Amount</th>
+                <th style={{ padding: '8px 6px' }}>{tr("Invoice")}</th>
+                <th style={{ padding: '8px 6px' }}>{tr("Description")}</th>
+                <th style={{ padding: '8px 6px' }}>{tr("Status")}</th>
+                <th style={{ padding: '8px 6px' }}>{tr("Issued")}</th>
+                <th style={{ padding: '8px 6px' }}>{tr("Paid")}</th>
+                <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Amount")}</th>
                 <th style={{ padding: '8px 6px' }}></th>
               </tr>
             </thead>
@@ -371,7 +371,7 @@ export default function FinanceSection({
                                 : 'Requested by staff'
                             }
                           >
-                            requested
+                            {tr("requested")}
                           </span>
                         )}
                       </td>
@@ -386,7 +386,7 @@ export default function FinanceSection({
                         {inv.paidAt ? (
                           <>
                             {new Date(inv.paidAt).toLocaleDateString()}
-                            {inv.paymentMethod && <div style={{ fontSize: '0.75rem' }}>via {inv.paymentMethod}</div>}
+                            {inv.paymentMethod && <div style={{ fontSize: '0.75rem' }}>{tr("via")}{' '}{inv.paymentMethod}</div>}
                           </>
                         ) : (
                           '—'
@@ -399,7 +399,7 @@ export default function FinanceSection({
                           className="btn btn-secondary"
                           style={{ fontSize: '0.75rem', padding: '5px 10px', marginRight: 6, display: 'inline-block' }}
                         >
-                          Download PDF
+                          {tr("Download PDF")}
                         </a>
                         {inv.status === 'UNPAID' && inv.paymentLink && (
                           <a
@@ -409,7 +409,7 @@ export default function FinanceSection({
                             className="btn btn-secondary"
                             style={{ fontSize: '0.75rem', padding: '5px 10px', marginRight: 6, display: 'inline-block' }}
                           >
-                            Pay online ↗
+                            {tr("Pay online ↗")}
                           </a>
                         )}
                         {!rowOpen && (
@@ -421,7 +421,7 @@ export default function FinanceSection({
                                 onClick={() => openMarkPaid(inv)}
                                 disabled={busyId === inv.id}
                               >
-                                Mark paid
+                                {tr("Mark paid")}
                               </button>
                             )}
                             {inv.status === 'PAID' && (
@@ -431,7 +431,7 @@ export default function FinanceSection({
                                 onClick={() => handleUnmarkPaid(inv.id)}
                                 disabled={busyId === inv.id}
                               >
-                                Unmark paid
+                                {tr("Unmark paid")}
                               </button>
                             )}
                             <button
@@ -440,7 +440,7 @@ export default function FinanceSection({
                               onClick={() => openEdit(inv)}
                               disabled={busyId === inv.id}
                             >
-                              Edit
+                              {tr("Edit")}
                             </button>
                             <button
                               className="btn btn-secondary"
@@ -448,7 +448,7 @@ export default function FinanceSection({
                               onClick={() => handleDelete(inv.id, inv.invoiceNumber, inv.status)}
                               disabled={busyId === inv.id}
                             >
-                              Delete
+                              {tr("Delete")}
                             </button>
                           </>
                         )}
@@ -459,7 +459,7 @@ export default function FinanceSection({
                         <td colSpan={7} style={{ padding: '4px 6px 12px' }}>
                           <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap', background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 8 }}>
                             <div>
-                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>Date of payment</label>
+                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>{tr("Date of payment")}</label>
                               <input
                                 type="date"
                                 value={paidAtInput}
@@ -468,11 +468,11 @@ export default function FinanceSection({
                               />
                             </div>
                             <div>
-                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>Payment method</label>
+                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>{tr("Payment method")}</label>
                               <input
                                 value={paymentMethodInput}
                                 onChange={(e) => setPaymentMethodInput(e.target.value)}
-                                placeholder="e.g. Bank transfer, Cash, Wire"
+                                placeholder={tr("e.g. Bank transfer, Cash, Wire")}
                                 style={{ margin: 0 }}
                               />
                             </div>
@@ -482,7 +482,7 @@ export default function FinanceSection({
                               onClick={() => handleConfirmMarkPaid(inv.id)}
                               disabled={busyId === inv.id}
                             >
-                              {busyId === inv.id ? 'Saving…' : 'Confirm paid'}
+                              {busyId === inv.id ? tr("Saving…") : tr("Confirm paid")}
                             </button>
                             <button
                               className="btn btn-secondary"
@@ -490,7 +490,7 @@ export default function FinanceSection({
                               onClick={closeRow}
                               disabled={busyId === inv.id}
                             >
-                              Cancel
+                              {tr("Cancel")}
                             </button>
                           </div>
                         </td>
@@ -501,7 +501,7 @@ export default function FinanceSection({
                         <td colSpan={7} style={{ padding: '4px 6px 12px' }}>
                           <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap', background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 8 }}>
                             <div>
-                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>Invoice number</label>
+                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>{tr("Invoice number")}</label>
                               <input
                                 value={editInvoiceNumber}
                                 onChange={(e) => setEditInvoiceNumber(e.target.value)}
@@ -509,7 +509,7 @@ export default function FinanceSection({
                               />
                             </div>
                             <div>
-                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>Amount (USD)</label>
+                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>{tr("Amount (USD)")}</label>
                               <input
                                 type="number"
                                 min="0"
@@ -520,7 +520,7 @@ export default function FinanceSection({
                               />
                             </div>
                             <div>
-                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>Issue date</label>
+                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>{tr("Issue date")}</label>
                               <input
                                 type="date"
                                 value={editIssuedAt}
@@ -529,7 +529,7 @@ export default function FinanceSection({
                               />
                             </div>
                             <div style={{ flex: '1 1 200px' }}>
-                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>Description</label>
+                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>{tr("Description")}</label>
                               <input
                                 value={editDescription}
                                 onChange={(e) => setEditDescription(e.target.value)}
@@ -537,19 +537,19 @@ export default function FinanceSection({
                               />
                             </div>
                             <div style={{ flex: '1 1 220px' }}>
-                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>Payment link</label>
+                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>{tr("Payment link")}</label>
                               <input
                                 type="url"
                                 value={editPaymentLink}
                                 onChange={(e) => setEditPaymentLink(e.target.value)}
-                                placeholder="https://buy.stripe.com/..."
+                                placeholder={tr("https://buy.stripe.com/...")}
                                 style={{ margin: 0, width: '100%' }}
                               />
                             </div>
                             {inv.status === 'PAID' && (
                               <>
                                 <div>
-                                  <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>Date of payment</label>
+                                  <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>{tr("Date of payment")}</label>
                                   <input
                                     type="date"
                                     value={paidAtInput}
@@ -558,11 +558,11 @@ export default function FinanceSection({
                                   />
                                 </div>
                                 <div>
-                                  <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>Payment method</label>
+                                  <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: 4 }}>{tr("Payment method")}</label>
                                   <input
                                     value={paymentMethodInput}
                                     onChange={(e) => setPaymentMethodInput(e.target.value)}
-                                    placeholder="e.g. Bank transfer, Cash, Wire"
+                                    placeholder={tr("e.g. Bank transfer, Cash, Wire")}
                                     style={{ margin: 0 }}
                                   />
                                 </div>
@@ -574,7 +574,7 @@ export default function FinanceSection({
                               onClick={() => handleConfirmEdit(inv)}
                               disabled={busyId === inv.id}
                             >
-                              {busyId === inv.id ? 'Saving…' : 'Save changes'}
+                              {busyId === inv.id ? tr("Saving…") : tr("Save changes")}
                             </button>
                             <button
                               className="btn btn-secondary"
@@ -582,7 +582,7 @@ export default function FinanceSection({
                               onClick={closeRow}
                               disabled={busyId === inv.id}
                             >
-                              Cancel
+                              {tr("Cancel")}
                             </button>
                           </div>
                         </td>

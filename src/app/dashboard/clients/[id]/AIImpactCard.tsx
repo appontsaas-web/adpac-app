@@ -30,7 +30,7 @@ function fmtTokens(n: number) {
 // current month — broken down by calendar month so months can be compared
 // side by side.
 export default function AIImpactCard({ clientId, isAdmin }: { clientId: string; isAdmin?: boolean }) {
-  const { moneyUsd: money } = useI18n();
+  const { tr, moneyUsd: money } = useI18n();
   const [data, setData] = useState<ImpactResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +50,7 @@ export default function AIImpactCard({ clientId, isAdmin }: { clientId: string; 
       }
       setData(await res.json());
     } catch (err: any) {
-      setError(err.message ?? 'Failed to load impact data — network error');
+      setError(err.message ?? tr("Failed to load impact data — network error"));
     } finally {
       setLoading(false);
     }
@@ -69,7 +69,7 @@ export default function AIImpactCard({ clientId, isAdmin }: { clientId: string; 
   async function saveEdit(monthKey: string) {
     const rate = Number(editValue);
     if (!Number.isFinite(rate) || rate < 0 || rate > 100) {
-      setError('Enter a valid rate between 0 and 100.');
+      setError(tr("Enter a valid rate between 0 and 100."));
       return;
     }
     setSavingMonth(monthKey);
@@ -82,13 +82,13 @@ export default function AIImpactCard({ clientId, isAdmin }: { clientId: string; 
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to save override');
+        setError(d.error ?? tr("Failed to save override"));
         return;
       }
       setEditingMonth(null);
       await load();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to save override — network error');
+      setError(err.message ?? tr("Failed to save override — network error"));
     } finally {
       setSavingMonth(null);
     }
@@ -103,13 +103,13 @@ export default function AIImpactCard({ clientId, isAdmin }: { clientId: string; 
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to reset month');
+        setError(d.error ?? tr("Failed to reset month"));
         return;
       }
       setEditingMonth(null);
       await load();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to reset month — network error');
+      setError(err.message ?? tr("Failed to reset month — network error"));
     } finally {
       setSavingMonth(null);
     }
@@ -123,38 +123,35 @@ export default function AIImpactCard({ clientId, isAdmin }: { clientId: string; 
 
   return (
     <div className="card">
-      <h2 style={{ fontSize: '1.1rem', marginBottom: 4 }}>AI optimization impact</h2>
+      <h2 style={{ fontSize: '1.1rem', marginBottom: 4 }}>{tr("AI optimization impact")}</h2>
       <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem', marginBottom: 12 }}>
-        Estimated impact of AI-approved optimizations on conversion value, by month, since July 2026. Tokens spent
-        (1 token per $0.50 of impact value) is drawn from that same impact figure, but locked in daily rather than
-        once a month — each day's tokens are that day's share of month-to-date ad spend, applied to the
-        month-to-date impact value, as each day syncs.
+        {tr("Estimated impact of AI-approved optimizations on conversion value, by month, since July 2026. Tokens spent (1 token per $0.50 of impact value) is drawn from that same impact figure, but locked in daily rather than once a month — each day's tokens are that day's share of month-to-date ad spend, applied to the month-to-date impact value, as each day syncs.")}
         {isAdmin && ' Click Edit on a month to set a specific rate.'}
       </p>
 
       {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: 10 }}>{error}</p>}
-      {loading && !data && <p style={{ color: 'var(--text-dim)' }}>Loading…</p>}
+      {loading && !data && <p style={{ color: 'var(--text-dim)' }}>{tr("Loading…")}</p>}
 
       {latest && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 18 }}>
           <div style={{ background: 'var(--bg-alt)', border: '1px solid var(--card-border)', borderRadius: 10, padding: '12px 14px' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginBottom: 4 }}>{latest.label} rate</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginBottom: 4 }}>{latest.label} {tr("rate")}</div>
             <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent2)' }}>
               {latest.optimizationRatePercent.toFixed(2)}%
             </div>
             {rateDelta !== null && (
               <div style={{ fontSize: '0.75rem', color: rateDelta >= 0 ? 'var(--accent2)' : '#ef4444', marginTop: 2 }}>
                 {rateDelta >= 0 ? '+' : ''}
-                {rateDelta.toFixed(2)}pp vs {previous!.label}
+                {rateDelta.toFixed(2)}{tr("pp vs")}{' '}{previous!.label}
               </div>
             )}
           </div>
           <div style={{ background: 'var(--bg-alt)', border: '1px solid var(--card-border)', borderRadius: 10, padding: '12px 14px' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginBottom: 4 }}>{latest.label} impact value</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginBottom: 4 }}>{latest.label} {tr("impact value")}</div>
             <div style={{ fontSize: '1.3rem', fontWeight: 700 }}>{money(latest.impactValueCents)}</div>
           </div>
           <div style={{ background: 'var(--bg-alt)', border: '1px solid var(--card-border)', borderRadius: 10, padding: '12px 14px' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginBottom: 4 }}>{latest.label} tokens spent</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginBottom: 4 }}>{latest.label} {tr("tokens spent")}</div>
             <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#ef4444' }}>-{fmtTokens(latest.tokensSpent)}</div>
           </div>
         </div>
@@ -165,10 +162,10 @@ export default function AIImpactCard({ clientId, isAdmin }: { clientId: string; 
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--card-border)', textAlign: 'left', color: 'var(--text-dim)' }}>
-                <th style={{ padding: '8px 6px' }}>Month</th>
-                <th style={{ padding: '8px 6px', textAlign: 'right' }}>Optimization rate</th>
-                <th style={{ padding: '8px 6px', textAlign: 'right' }}>Impact value</th>
-                <th style={{ padding: '8px 6px', textAlign: 'right' }}>Tokens spent</th>
+                <th style={{ padding: '8px 6px' }}>{tr("Month")}</th>
+                <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Optimization rate")}</th>
+                <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Impact value")}</th>
+                <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Tokens spent")}</th>
                 <th style={{ padding: '8px 6px' }}></th>
                 {isAdmin && <th style={{ padding: '8px 6px' }}></th>}
               </tr>
@@ -184,9 +181,9 @@ export default function AIImpactCard({ clientId, isAdmin }: { clientId: string; 
                         <span
                           className="badge badge-draft"
                           style={{ marginLeft: 6, fontSize: '0.65rem', verticalAlign: 'middle' }}
-                          title="Manually set by an admin"
+                          title={tr("Manually set by an admin")}
                         >
-                          set
+                          {tr("set")}
                         </span>
                       )}
                     </td>
@@ -229,7 +226,7 @@ export default function AIImpactCard({ clientId, isAdmin }: { clientId: string; 
                               onClick={() => saveEdit(r.monthKey)}
                               disabled={savingMonth === r.monthKey}
                             >
-                              {savingMonth === r.monthKey ? '…' : 'Save'}
+                              {savingMonth === r.monthKey ? '…' : tr("Save")}
                             </button>
                             <button
                               className="btn btn-secondary"
@@ -237,7 +234,7 @@ export default function AIImpactCard({ clientId, isAdmin }: { clientId: string; 
                               onClick={() => setEditingMonth(null)}
                               disabled={savingMonth === r.monthKey}
                             >
-                              Cancel
+                              {tr("Cancel")}
                             </button>
                           </>
                         ) : (
@@ -247,7 +244,7 @@ export default function AIImpactCard({ clientId, isAdmin }: { clientId: string; 
                               style={{ fontSize: '0.72rem', padding: '3px 8px', marginRight: 4 }}
                               onClick={() => startEdit(r)}
                             >
-                              Edit
+                              {tr("Edit")}
                             </button>
                             {r.isOverride && (
                               <button
@@ -255,9 +252,9 @@ export default function AIImpactCard({ clientId, isAdmin }: { clientId: string; 
                                 style={{ fontSize: '0.72rem', padding: '3px 8px' }}
                                 onClick={() => resetToPlaceholder(r.monthKey)}
                                 disabled={savingMonth === r.monthKey}
-                                title="Clear the manual value and go back to the auto-generated placeholder"
+                                title={tr("Clear the manual value and go back to the auto-generated placeholder")}
                               >
-                                Reset
+                                {tr("Reset")}
                               </button>
                             )}
                           </>

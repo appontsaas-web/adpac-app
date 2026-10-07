@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -42,6 +43,7 @@ export default function CampaignCard({
   readOnly?: boolean;
   isAdmin?: boolean;
 }) {
+  const { tr } = useI18n();
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -69,12 +71,12 @@ export default function CampaignCard({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error ?? 'Failed to update');
+        setError(data.error ?? tr("Failed to update"));
         return;
       }
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to update — network error');
+      setError(err.message ?? tr("Failed to update — network error"));
     } finally {
       setTogglingHidden(false);
     }
@@ -115,7 +117,7 @@ export default function CampaignCard({
     setLoading(false);
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error ?? 'Approval failed');
+      setError(data.error ?? tr("Approval failed"));
       return;
     }
     router.refresh();
@@ -129,7 +131,7 @@ export default function CampaignCard({
     setLoading(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? 'Discard failed');
+      setError(data.error ?? tr("Discard failed"));
       return;
     }
     router.refresh();
@@ -142,16 +144,16 @@ export default function CampaignCard({
           <span className={`badge ${badgeClass[campaign.status] ?? 'badge-draft'}`}>{campaign.status}</span>{' '}
           <strong>{campaign.name}</strong>{' '}
           <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>
-            ${(campaign.dailyBudgetCents / 100).toFixed(2)}/day
+            ${(campaign.dailyBudgetCents / 100).toFixed(2)}{tr("/day")}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-secondary" onClick={() => setExpanded(!expanded)}>
-            {expanded ? 'Hide' : 'Details'}
+            {expanded ? tr("Hide") : tr("Details")}
           </button>
           {!readOnly && (campaign.status === 'DRAFT' || campaign.status === 'PENDING_APPROVAL') && (
             <button className="btn" onClick={handleApprove} disabled={loading}>
-              {loading ? 'Pushing to Google Ads…' : 'Approve & push live (paused)'}
+              {loading ? tr("Pushing to Google Ads…") : tr("Approve & push live (paused)")}
             </button>
           )}
           {/* Discard only makes sense before anything's been created on Google's side —
@@ -159,12 +161,12 @@ export default function CampaignCard({
               on Google Ads instead, which is a separate action from deleting our record. */}
           {!readOnly && (campaign.status === 'DRAFT' || campaign.status === 'PENDING_APPROVAL') && !campaign.googleCampaignId && (
             <button className="btn btn-secondary" onClick={handleDiscard} disabled={loading}>
-              Discard draft
+              {tr("Discard draft")}
             </button>
           )}
           {isAdmin && (
             <button className="btn btn-secondary" onClick={handleToggleHidden} disabled={togglingHidden}>
-              {togglingHidden ? 'Working…' : campaign.hiddenFromList ? 'Unhide' : 'Hide from list'}
+              {togglingHidden ? tr("Working…") : campaign.hiddenFromList ? tr("Unhide") : tr("Hide from list")}
             </button>
           )}
         </div>
@@ -175,19 +177,19 @@ export default function CampaignCard({
       {expanded && (
         <div style={{ marginTop: 14, fontSize: '0.85rem', color: 'var(--text-dim)' }}>
           <p style={{ marginBottom: 4 }}>
-            <strong style={{ color: 'var(--text)' }}>Campaign type:</strong> {draft.campaignType ?? 'Search'}
+            <strong style={{ color: 'var(--text)' }}>{tr("Campaign type:")}</strong> {draft.campaignType ?? tr("Search")}
           </p>
           <p style={{ marginBottom: 4 }}>
-            <strong style={{ color: 'var(--text)' }}>Ad language:</strong> {draft.targetLanguage ?? 'Not recorded (generated before this was tracked)'}
+            <strong style={{ color: 'var(--text)' }}>{tr("Ad language:")}</strong> {draft.targetLanguage ?? tr("Not recorded (generated before this was tracked)")}
           </p>
           <div style={{ marginBottom: 8 }}>
-            <strong style={{ color: 'var(--text)' }}>Target locations:</strong>{' '}
+            <strong style={{ color: 'var(--text)' }}>{tr("Target locations:")}</strong>{' '}
             {editable ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
                 <input
                   value={locationsInput}
                   onChange={(e) => setLocationsInput(e.target.value)}
-                  placeholder="e.g. Lebanon, United Arab Emirates"
+                  placeholder={tr("e.g. Lebanon, United Arab Emirates")}
                   style={{ margin: 0, flex: 1 }}
                 />
                 <button
@@ -196,34 +198,34 @@ export default function CampaignCard({
                   disabled={savingLocations}
                   style={{ whiteSpace: 'nowrap' }}
                 >
-                  {savingLocations ? 'Saving…' : 'Save'}
+                  {savingLocations ? tr("Saving…") : tr("Save")}
                 </button>
               </div>
             ) : (
-              <span>{draft.targetLocations?.length ? draft.targetLocations.join(', ') : 'Not recorded'}</span>
+              <span>{draft.targetLocations?.length ? draft.targetLocations.join(', ') : tr("Not recorded")}</span>
             )}
             {locationsSaved && (
               <p style={{ color: 'var(--accent2)', fontSize: '0.8rem', marginTop: 4 }}>
-                Saved — will be applied as real geo-targeting when approved.
+                {tr("Saved — will be applied as real geo-targeting when approved.")}
               </p>
             )}
             {locationsError && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: 4 }}>{locationsError}</p>}
           </div>
           <p style={{ marginBottom: 8 }}>
-            <strong style={{ color: 'var(--text)' }}>Rationale:</strong> {draft.rationale}
+            <strong style={{ color: 'var(--text)' }}>{tr("Rationale:")}</strong> {draft.rationale}
           </p>
           <p style={{ marginBottom: 4 }}>
-            <strong style={{ color: 'var(--text)' }}>Keywords:</strong> {draft.keywords.join(', ')}
+            <strong style={{ color: 'var(--text)' }}>{tr("Keywords:")}</strong> {draft.keywords.join(', ')}
           </p>
           <p style={{ marginBottom: 4 }}>
-            <strong style={{ color: 'var(--text)' }}>Headlines:</strong> {draft.headlines.join(' · ')}
+            <strong style={{ color: 'var(--text)' }}>{tr("Headlines:")}</strong> {draft.headlines.join(' · ')}
           </p>
           <p>
-            <strong style={{ color: 'var(--text)' }}>Descriptions:</strong> {draft.descriptions.join(' · ')}
+            <strong style={{ color: 'var(--text)' }}>{tr("Descriptions:")}</strong> {draft.descriptions.join(' · ')}
           </p>
           {campaign.googleCampaignId && (
             <p style={{ marginTop: 8 }}>
-              Google campaign ID: <code>{campaign.googleCampaignId}</code>
+              {tr("Google campaign ID:")}{' '}<code>{campaign.googleCampaignId}</code>
               {draft.imported
                 ? ' — imported from an existing Google Ads campaign; manage its on/off status directly in Google Ads.'
                 : " — created PAUSED, turn it on from Google Ads or the API once you've reviewed it."}

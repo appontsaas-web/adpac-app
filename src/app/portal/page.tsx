@@ -1,3 +1,4 @@
+import { getTr } from '@/lib/i18n/server';
 import { redirect } from 'next/navigation';
 import { getCurrentPortalClient, currentPeriodKey } from '@/lib/clientPortalAuth';
 import { db } from '@/lib/db';
@@ -13,6 +14,7 @@ import LanguageToggle from '@/lib/i18n/LanguageToggle';
 // Once both are satisfied, shows whatever's next: a plan waiting for
 // approval, or a "you're all set" state.
 export default async function PortalHomePage({ searchParams }: { searchParams: { error?: string } }) {
+  const tr = getTr();
   const client = await getCurrentPortalClient();
 
   if (!client) {
@@ -22,8 +24,8 @@ export default async function PortalHomePage({ searchParams }: { searchParams: {
           <div className="container" style={{ maxWidth: 380, paddingTop: 24, textAlign: 'center' }}>
             <p style={{ color: '#ef4444', fontSize: '0.85rem' }}>
               {searchParams.error === 'invalid-or-expired'
-                ? 'That sign-in link is invalid or has expired — request a new one below.'
-                : 'Something went wrong — request a new sign-in link below.'}
+                ? tr("That sign-in link is invalid or has expired — request a new one below.")
+                : tr("Something went wrong — request a new sign-in link below.")}
             </p>
           </div>
         )}
@@ -56,7 +58,7 @@ export default async function PortalHomePage({ searchParams }: { searchParams: {
   return (
     <div className="container" style={{ maxWidth: 640, paddingTop: 60, paddingBottom: 60 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h1 style={{ fontSize: '1.4rem' }}>Welcome, {client.name}</h1>
+        <h1 style={{ fontSize: '1.4rem' }}>{tr("Welcome,")}{' '}{client.name}</h1>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <LanguageToggle />
           <PortalLogoutButton />
@@ -64,24 +66,23 @@ export default async function PortalHomePage({ searchParams }: { searchParams: {
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <h2 style={{ fontSize: '1.05rem', marginBottom: 6 }}>This month's input</h2>
+        <h2 style={{ fontSize: '1.05rem', marginBottom: 6 }}>{tr("This month's input")}</h2>
         <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: 10 }}>
-          Submitted for {periodKey}. Want to update it?
+          {tr("Submitted for")}{' '}{periodKey}{tr(". Want to update it?")}
         </p>
         <a href="/portal/form" className="btn btn-secondary">
-          Update this month's goals
+          {tr("Update this month's goals")}
         </a>
       </div>
 
       {pendingPlan && (
         <div className="card" style={{ marginBottom: 16, borderColor: 'var(--accent, #6d5efc)' }}>
-          <h2 style={{ fontSize: '1.05rem', marginBottom: 6 }}>A plan is ready for your review</h2>
+          <h2 style={{ fontSize: '1.05rem', marginBottom: 6 }}>{tr("A plan is ready for your review")}</h2>
           <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: 10 }}>
-            {pendingPlan.periodType === 'QUARTERLY' ? 'Quarterly' : 'Monthly'} plan for {pendingPlan.periodLabel} —
-            personas, ad copy, and recommended next steps.
+            {pendingPlan.periodType === 'QUARTERLY' ? tr("Quarterly") : tr("Monthly")} {tr("plan for")}{' '}{pendingPlan.periodLabel} {tr("— personas, ad copy, and recommended next steps.")}
           </p>
           <a href={`/portal/plan/${pendingPlan.id}`} className="btn">
-            Review plan
+            {tr("Review plan")}
           </a>
         </div>
       )}
@@ -89,21 +90,21 @@ export default async function PortalHomePage({ searchParams }: { searchParams: {
       {!pendingPlan && latestResolvedPlan && (
         <div className="card">
           <h2 style={{ fontSize: '1.05rem', marginBottom: 6 }}>
-            Your last plan was {latestResolvedPlan.status === 'CLIENT_APPROVED' ? 'approved' : 'sent back for changes'}
+            {tr("Your last plan was")}{' '}{latestResolvedPlan.status === 'CLIENT_APPROVED' ? tr("approved") : tr("sent back for changes")}
           </h2>
           <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: 10 }}>
-            {latestResolvedPlan.periodType === 'QUARTERLY' ? 'Quarterly' : 'Monthly'} plan for{' '}
+            {latestResolvedPlan.periodType === 'QUARTERLY' ? tr("Quarterly") : tr("Monthly")} {tr("plan for")}{' '}
             {latestResolvedPlan.periodLabel}.
           </p>
           <a href={`/portal/plan/${latestResolvedPlan.id}`} className="btn btn-secondary">
-            View
+            {tr("View")}
           </a>
         </div>
       )}
 
       {!pendingPlan && !latestResolvedPlan && (
         <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>
-          You're all set for now — we'll email you when your next plan is ready for review.
+          {tr("You're all set for now — we'll email you when your next plan is ready for review.")}
         </p>
       )}
     </div>

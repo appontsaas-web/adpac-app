@@ -113,7 +113,7 @@ export default function AIInsightsPanel({
   insights: Insight[];
   outcomes: Record<string, Outcome>;
 }) {
-  const { money, t, num } = useI18n();
+  const { tr, money, t, num } = useI18n();
   const router = useRouter();
   const [running, setRunning] = useState(false);
   const [runningFunnel, setRunningFunnel] = useState(false);
@@ -133,7 +133,7 @@ export default function AIInsightsPanel({
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(d.error ?? 'Failed to run AI review');
+        setError(d.error ?? tr("Failed to run AI review"));
         return;
       }
       setRunMessage(
@@ -144,7 +144,7 @@ export default function AIInsightsPanel({
       if (d.errors?.length) setError(d.errors.join('; '));
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to run AI review — network error');
+      setError(err.message ?? tr("Failed to run AI review — network error"));
     } finally {
       setRunning(false);
     }
@@ -162,7 +162,7 @@ export default function AIInsightsPanel({
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(d.error ?? 'Failed to run funnel review');
+        setError(d.error ?? tr("Failed to run funnel review"));
         return;
       }
       setRunMessage(
@@ -172,7 +172,7 @@ export default function AIInsightsPanel({
       );
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to run funnel review — network error');
+      setError(err.message ?? tr("Failed to run funnel review — network error"));
     } finally {
       setRunningFunnel(false);
     }
@@ -186,12 +186,12 @@ export default function AIInsightsPanel({
       const res = await fetch(`/api/ai-insights/${id}/approve`, { method: 'POST' });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to approve insight');
+        setError(d.error ?? tr("Failed to approve insight"));
         return;
       }
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to approve insight — network error');
+      setError(err.message ?? tr("Failed to approve insight — network error"));
     } finally {
       setProcessingId(null);
     }
@@ -204,12 +204,12 @@ export default function AIInsightsPanel({
       const res = await fetch(`/api/ai-insights/${id}/dismiss`, { method: 'POST' });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to dismiss insight');
+        setError(d.error ?? tr("Failed to dismiss insight"));
         return;
       }
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to dismiss insight — network error');
+      setError(err.message ?? tr("Failed to dismiss insight — network error"));
     } finally {
       setProcessingId(null);
     }
@@ -218,27 +218,25 @@ export default function AIInsightsPanel({
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 10 }}>
-        <h2 style={{ fontSize: '1.1rem' }}>AI performance review</h2>
+        <h2 style={{ fontSize: '1.1rem' }}>{tr("AI performance review")}</h2>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-secondary" onClick={handleRun} disabled={running}>
-            {running ? 'Reviewing…' : 'Run AI review'}
+            {running ? tr("Reviewing…") : tr("Run AI review")}
           </button>
           <button className="btn btn-secondary" onClick={handleRunFunnel} disabled={runningFunnel}>
-            {runningFunnel ? 'Reviewing…' : 'Run funnel review'}
+            {runningFunnel ? tr("Reviewing…") : tr("Run funnel review")}
           </button>
         </div>
       </div>
       <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: 12 }}>
-        Compares the last 7 days against the prior 14 for every live campaign, factors in budget pacing,
-        wasted search-term spend, site-wide GA4 signals (when connected), and what's already been approved
-        or rejected before — nothing happens on Google Ads until you approve one below.
+        {tr("Compares the last 7 days against the prior 14 for every live campaign, factors in budget pacing, wasted search-term spend, site-wide GA4 signals (when connected), and what's already been approved or rejected before — nothing happens on Google Ads until you approve one below.")}
       </p>
 
       {runMessage && <p style={{ color: 'var(--accent2)', fontSize: '0.82rem', marginBottom: 10 }}>{runMessage}</p>}
       {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: 10 }}>{error}</p>}
 
       {insights.length === 0 ? (
-        <p style={{ color: 'var(--text-dim)' }}>No insights yet. Click "Run AI review" to check.</p>
+        <p style={{ color: 'var(--text-dim)' }}>{tr("No insights yet. Click \"Run AI review\" to check.")}</p>
       ) : (
         insights.map((ins) => {
           const payload = JSON.parse(ins.payloadJson);
@@ -259,10 +257,10 @@ export default function AIInsightsPanel({
                       disabled={processingId === ins.id}
                     >
                       {processingId === ins.id
-                        ? 'Working…'
+                        ? tr("Working…")
                         : payload.type === 'ANOMALY_ALERT' || payload.type === 'FUNNEL_OPTIMIZATION'
-                        ? 'Acknowledge'
-                        : 'Approve'}
+                        ? tr("Acknowledge")
+                        : tr("Approve")}
                     </button>
                     <button
                       className="btn btn-secondary"
@@ -270,7 +268,7 @@ export default function AIInsightsPanel({
                       onClick={() => handleDismiss(ins.id)}
                       disabled={processingId === ins.id}
                     >
-                      Dismiss
+                      {tr("Dismiss")}
                     </button>
                   </div>
                 )}
@@ -282,7 +280,7 @@ export default function AIInsightsPanel({
               {payload.signalSnapshot && (
                 <div style={{ background: 'var(--bg-alt)', border: '1px solid var(--card-border)', borderRadius: 8, padding: '10px 12px', marginBottom: 8, maxWidth: 340 }}>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.3 }}>
-                    Data this was based on
+                    {tr("Data this was based on")}
                   </div>
                   <TrendBar
                     label="Avg. daily spend"
@@ -310,15 +308,14 @@ export default function AIInsightsPanel({
                 if (!outcome.hasData) {
                   return (
                     <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginBottom: 8 }}>
-                      Monitoring — no performance data has synced in yet since this was approved. Click "Sync
-                      now" on Performance in a day or two to start seeing results here.
+                      {tr("Monitoring — no performance data has synced in yet since this was approved. Click \"Sync now\" on Performance in a day or two to start seeing results here.")}
                     </p>
                   );
                 }
                 return (
                   <div style={{ background: 'var(--bg-alt)', border: '1px solid var(--card-border)', borderRadius: 8, padding: '10px 12px', marginBottom: 8, maxWidth: 340 }}>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.3 }}>
-                      Outcome — {outcome.daysSinceExecuted} day{outcome.daysSinceExecuted === 1 ? '' : 's'} since approved
+                      {tr("Outcome —")}{' '}{outcome.daysSinceExecuted} {tr("day")}{outcome.daysSinceExecuted === 1 ? '' : 's'} {tr("since approved")}
                     </div>
                     <TrendBar
                       label="Avg. daily spend"
@@ -349,54 +346,54 @@ export default function AIInsightsPanel({
               })()}
               {payload.type === 'ADJUST_BUDGET' && payload.proposedDailyBudgetCents && (
                 <p style={{ fontSize: '0.8rem', marginTop: 4 }}>
-                  Proposed daily budget: <strong>{money(payload.proposedDailyBudgetCents)}</strong>
+                  {tr("Proposed daily budget:")}{' '}<strong>{money(payload.proposedDailyBudgetCents)}</strong>
                 </p>
               )}
               {payload.type === 'REWRITE_AD_COPY' && (
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
                   <div>
-                    <strong style={{ color: 'var(--text)' }}>New headlines:</strong> {payload.proposedHeadlines?.join(' · ')}
+                    <strong style={{ color: 'var(--text)' }}>{tr("New headlines:")}</strong> {payload.proposedHeadlines?.join(' · ')}
                   </div>
                   <div>
-                    <strong style={{ color: 'var(--text)' }}>New descriptions:</strong> {payload.proposedDescriptions?.join(' · ')}
+                    <strong style={{ color: 'var(--text)' }}>{tr("New descriptions:")}</strong> {payload.proposedDescriptions?.join(' · ')}
                   </div>
                 </div>
               )}
               {payload.type === 'REALLOCATE_BUDGET' && payload.reallocateAmountCents && (
                 <p style={{ fontSize: '0.8rem', marginTop: 4 }}>
-                  Move <strong>{money(payload.reallocateAmountCents)}/day</strong> from{' '}
-                  <strong>{campaignNames[payload.reallocateFromCampaignId] ?? payload.reallocateFromCampaignId}</strong> to{' '}
+                  {tr("Move")}{' '}<strong>{money(payload.reallocateAmountCents)}{tr("/day")}</strong> {tr("from")}{' '}
+                  <strong>{campaignNames[payload.reallocateFromCampaignId] ?? payload.reallocateFromCampaignId}</strong> {tr("to")}{' '}
                   <strong>{campaignNames[payload.campaignId] ?? payload.campaignId}</strong>
                 </p>
               )}
               {payload.type === 'ADJUST_BID_MODIFIER' && payload.proposedBidModifier !== undefined && (
                 <p style={{ fontSize: '0.8rem', marginTop: 4 }}>
-                  {payload.bidModifierCriterionType === 'DEVICE' ? 'Device' : 'Hour'}{' '}
-                  <strong>{payload.bidModifierValue}</strong>: bid multiplier{' '}
-                  <strong>{payload.proposedBidModifier === 0 ? 'opt out (0x)' : `${payload.proposedBidModifier}x`}</strong>
+                  {payload.bidModifierCriterionType === 'DEVICE' ? tr("Device") : tr("Hour")}{' '}
+                  <strong>{payload.bidModifierValue}</strong>{tr(": bid multiplier")}{' '}
+                  <strong>{payload.proposedBidModifier === 0 ? tr("opt out (0x)") : `${payload.proposedBidModifier}x`}</strong>
                 </p>
               )}
               {payload.type === 'FUNNEL_OPTIMIZATION' && payload.stageRates && (
                 <div style={{ background: 'var(--bg-alt)', border: '1px solid var(--card-border)', borderRadius: 8, padding: '10px 12px', marginBottom: 8, maxWidth: 380 }}>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.3 }}>
-                    Funnel — last 30 days
+                    {tr("Funnel — last 30 days")}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4 }}>
-                    <span style={{ color: 'var(--text-dim)' }}>Clicks → Sessions</span>
+                    <span style={{ color: 'var(--text-dim)' }}>{tr("Clicks → Sessions")}</span>
                     <span>
                       {num(payload.stageRates.clicks)} → {num(payload.stageRates.sessions)} (
                       {pct(payload.stageRates.clickToSessionRate)})
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4 }}>
-                    <span style={{ color: 'var(--text-dim)' }}>Sessions → Engaged</span>
+                    <span style={{ color: 'var(--text-dim)' }}>{tr("Sessions → Engaged")}</span>
                     <span>
                       {num(payload.stageRates.sessions)} → {num(payload.stageRates.engagedSessions)} (
                       {pct(payload.stageRates.sessionToEngagedRate)})
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 8 }}>
-                    <span style={{ color: 'var(--text-dim)' }}>Engaged → Conversions</span>
+                    <span style={{ color: 'var(--text-dim)' }}>{tr("Engaged → Conversions")}</span>
                     <span>
                       {num(payload.stageRates.engagedSessions)} → {num(payload.stageRates.conversions)} (
                       {pct(payload.stageRates.engagedToConversionRate)})
@@ -404,14 +401,14 @@ export default function AIInsightsPanel({
                   </div>
                   {payload.recommendation && (
                     <p style={{ fontSize: '0.8rem', margin: 0 }}>
-                      <strong style={{ color: 'var(--text)' }}>Recommendation:</strong> {payload.recommendation}
+                      <strong style={{ color: 'var(--text)' }}>{tr("Recommendation:")}</strong> {payload.recommendation}
                     </p>
                   )}
                 </div>
               )}
               {payload.type === 'ADD_NEGATIVE_KEYWORDS' && payload.proposedNegativeKeywords?.length > 0 && (
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
-                  <strong style={{ color: 'var(--text)' }}>Negative keywords to add:</strong>{' '}
+                  <strong style={{ color: 'var(--text)' }}>{tr("Negative keywords to add:")}</strong>{' '}
                   {payload.proposedNegativeKeywords.join(' · ')}
                 </p>
               )}

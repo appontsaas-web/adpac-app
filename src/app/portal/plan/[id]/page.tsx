@@ -1,3 +1,4 @@
+import { getTr } from '@/lib/i18n/server';
 import { redirect } from 'next/navigation';
 import { getCurrentPortalClient } from '@/lib/clientPortalAuth';
 import { db } from '@/lib/db';
@@ -24,6 +25,7 @@ interface ProposedAction {
 }
 
 export default async function PortalPlanPage({ params }: { params: { id: string } }) {
+  const tr = getTr();
   const client = await getCurrentPortalClient();
   if (!client) redirect('/portal');
 
@@ -47,20 +49,19 @@ export default async function PortalPlanPage({ params }: { params: { id: string 
   return (
     <div className="container" style={{ maxWidth: 720, paddingTop: 60, paddingBottom: 60 }}>
       <a href="/portal" style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>
-        ← Back
+        {tr("← Back")}
       </a>
       <h1 style={{ fontSize: '1.4rem', margin: '10px 0 4px' }}>
-        {plan.periodType === 'QUARTERLY' ? 'Quarterly' : 'Monthly'} plan — {plan.periodLabel}
+        {plan.periodType === 'QUARTERLY' ? tr("Quarterly") : tr("Monthly")} {tr("plan —")}{' '}{plan.periodLabel}
       </h1>
       <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: 20 }}>
-        Audience personas, ad copy, and recommended next steps, built from what you told us and your real
-        campaign performance.
+        {tr("Audience personas, ad copy, and recommended next steps, built from what you told us and your real campaign performance.")}
       </p>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <h2 style={{ fontSize: '1.05rem', marginBottom: 6 }}>Objectives</h2>
+        <h2 style={{ fontSize: '1.05rem', marginBottom: 6 }}>{tr("Objectives")}</h2>
         <p style={{ fontSize: '0.9rem', marginBottom: 14 }}>{objectives}</p>
-        <h2 style={{ fontSize: '1.05rem', marginBottom: 6 }}>Plan</h2>
+        <h2 style={{ fontSize: '1.05rem', marginBottom: 6 }}>{tr("Plan")}</h2>
         <p style={{ fontSize: '0.9rem', color: 'var(--text-dim)' }}>{narrative}</p>
       </div>
 
@@ -74,18 +75,18 @@ export default async function PortalPlanPage({ params }: { params: { id: string 
               <em>{p.demographicBasis}</em>
             </p>
             <p style={{ fontSize: '0.85rem', marginBottom: 4 }}>
-              <strong>Motivations:</strong> {p.motivations.join(' · ')}
+              <strong>{tr("Motivations:")}</strong> {p.motivations.join(' · ')}
             </p>
             <p style={{ fontSize: '0.85rem', marginBottom: 10 }}>
-              <strong>Pain points:</strong> {p.painPoints.join(' · ')}
+              <strong>{tr("Pain points:")}</strong> {p.painPoints.join(' · ')}
             </p>
             {copy && (
               <div style={{ fontSize: '0.85rem', background: 'var(--bg-alt)', border: '1px solid var(--card-border)', borderRadius: 8, padding: '10px 12px' }}>
                 <div style={{ marginBottom: 4 }}>
-                  <strong>Sample headlines:</strong> {copy.headlines.slice(0, 5).join(' · ')}
+                  <strong>{tr("Sample headlines:")}</strong> {copy.headlines.slice(0, 5).join(' · ')}
                 </div>
                 <div>
-                  <strong>Sample descriptions:</strong> {copy.descriptions.join(' · ')}
+                  <strong>{tr("Sample descriptions:")}</strong> {copy.descriptions.join(' · ')}
                 </div>
               </div>
             )}
@@ -95,18 +96,17 @@ export default async function PortalPlanPage({ params }: { params: { id: string 
 
       {proposedActions.length > 0 && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <h2 style={{ fontSize: '1.05rem', marginBottom: 10 }}>Recommended next steps</h2>
+          <h2 style={{ fontSize: '1.05rem', marginBottom: 10 }}>{tr("Recommended next steps")}</h2>
           <ul style={{ paddingLeft: 18, fontSize: '0.88rem' }}>
             {proposedActions.map((a, i) => (
               <li key={i} style={{ marginBottom: 8 }}>
-                Update ad copy on <strong>{campaignNames[a.campaignId] ?? a.campaignId}</strong> toward the{' '}
-                <strong>{a.personaName}</strong> persona — {a.rationale}
+                {tr("Update ad copy on")}{' '}<strong>{campaignNames[a.campaignId] ?? a.campaignId}</strong> {tr("toward the")}{' '}
+                <strong>{a.personaName}</strong> {tr("persona —")}{' '}{a.rationale}
               </li>
             ))}
           </ul>
           <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
-            Approving below doesn't change anything on your ad accounts immediately — it lets our team review and
-            apply these changes.
+            {tr("Approving below doesn't change anything on your ad accounts immediately — it lets our team review and apply these changes.")}
           </p>
         </div>
       )}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 import { useState, useEffect, useCallback } from 'react';
 
 interface TokenTx {
@@ -26,6 +27,7 @@ function fmtTokens(n: number) {
 // its own data so it can be dropped into either the admin FinanceSection or
 // the read-only InvoicesViewOnly without the parent needing to load it.
 export default function TokenBalanceCard({ clientId, isAdmin }: { clientId: string; isAdmin?: boolean }) {
+  const { tr } = useI18n();
   const [data, setData] = useState<TokensResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export default function TokenBalanceCard({ clientId, isAdmin }: { clientId: stri
       }
       setData(await res.json());
     } catch (err: any) {
-      setError(err.message ?? 'Failed to load token balance — network error');
+      setError(err.message ?? tr("Failed to load token balance — network error"));
     } finally {
       setLoading(false);
     }
@@ -69,7 +71,7 @@ export default function TokenBalanceCard({ clientId, isAdmin }: { clientId: stri
   async function saveRate() {
     const rate = Number(rateInput);
     if (!Number.isFinite(rate) || rate < 0) {
-      setError('Enter a valid rate of 0 or more.');
+      setError(tr("Enter a valid rate of 0 or more."));
       return;
     }
     setSavingRate(true);
@@ -82,13 +84,13 @@ export default function TokenBalanceCard({ clientId, isAdmin }: { clientId: stri
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to save rate');
+        setError(d.error ?? tr("Failed to save rate"));
         return;
       }
       setEditingRate(false);
       await load();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to save rate — network error');
+      setError(err.message ?? tr("Failed to save rate — network error"));
     } finally {
       setSavingRate(false);
     }
@@ -118,7 +120,7 @@ export default function TokenBalanceCard({ clientId, isAdmin }: { clientId: stri
       );
       await load();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to refresh — network error');
+      setError(err.message ?? tr("Failed to refresh — network error"));
     } finally {
       setRecomputing(false);
     }
@@ -129,16 +131,16 @@ export default function TokenBalanceCard({ clientId, isAdmin }: { clientId: stri
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
         <div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 8 }}>
-            Token balance
+            {tr("Token balance")}
             {isAdmin && (
               <button
                 className="btn btn-secondary"
                 style={{ fontSize: '0.68rem', padding: '2px 7px' }}
                 onClick={recompute}
                 disabled={recomputing}
-                title="Reprice invoices at the current rate and re-lock daily spend against current AI-impact rates — use after editing the rate, an override, or an invoice"
+                title={tr("Reprice invoices at the current rate and re-lock daily spend against current AI-impact rates — use after editing the rate, an override, or an invoice")}
               >
-                {recomputing ? 'Refreshing…' : '↻ Refresh'}
+                {recomputing ? tr("Refreshing…") : tr("↻ Refresh")}
               </button>
             )}
           </div>
@@ -156,7 +158,7 @@ export default function TokenBalanceCard({ clientId, isAdmin }: { clientId: stri
           <div style={{ textAlign: 'right', fontSize: '0.78rem', color: 'var(--text-dim)' }}>
             {editingRate ? (
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                <span>tokens / $</span>
+                <span>{tr("tokens / $")}</span>
                 <input
                   type="number"
                   min="0"
@@ -167,7 +169,7 @@ export default function TokenBalanceCard({ clientId, isAdmin }: { clientId: stri
                   autoFocus
                 />
                 <button className="btn" style={{ fontSize: '0.72rem', padding: '3px 8px' }} onClick={saveRate} disabled={savingRate}>
-                  {savingRate ? '…' : 'Save'}
+                  {savingRate ? '…' : tr("Save")}
                 </button>
                 <button
                   className="btn btn-secondary"
@@ -175,7 +177,7 @@ export default function TokenBalanceCard({ clientId, isAdmin }: { clientId: stri
                   onClick={() => setEditingRate(false)}
                   disabled={savingRate}
                 >
-                  Cancel
+                  {tr("Cancel")}
                 </button>
               </div>
             ) : (
@@ -188,7 +190,7 @@ export default function TokenBalanceCard({ clientId, isAdmin }: { clientId: stri
                   style={{ fontSize: '0.72rem', padding: '3px 8px', marginLeft: 8 }}
                   onClick={startEditRate}
                 >
-                  Edit rate
+                  {tr("Edit rate")}
                 </button>
               </>
             )}
@@ -205,17 +207,17 @@ export default function TokenBalanceCard({ clientId, isAdmin }: { clientId: stri
             style={{ fontSize: '0.72rem', padding: '3px 8px' }}
             onClick={() => setShowLedger(!showLedger)}
           >
-            {showLedger ? 'Hide' : 'Show'} history ({data.transactions.length})
+            {showLedger ? tr("Hide") : tr("Show")} {tr("history (")}{data.transactions.length})
           </button>
           {showLedger && (
             <div style={{ overflowX: 'auto', marginTop: 10 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--card-border)', textAlign: 'left', color: 'var(--text-dim)' }}>
-                    <th style={{ padding: '6px' }}>Date</th>
-                    <th style={{ padding: '6px' }}>Type</th>
-                    <th style={{ padding: '6px' }}>Note</th>
-                    <th style={{ padding: '6px', textAlign: 'right' }}>Tokens</th>
+                    <th style={{ padding: '6px' }}>{tr("Date")}</th>
+                    <th style={{ padding: '6px' }}>{tr("Type")}</th>
+                    <th style={{ padding: '6px' }}>{tr("Note")}</th>
+                    <th style={{ padding: '6px', textAlign: 'right' }}>{tr("Tokens")}</th>
                   </tr>
                 </thead>
                 <tbody>

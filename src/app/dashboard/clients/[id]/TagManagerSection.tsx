@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -33,6 +34,7 @@ const emptyForm = {
 // has no "paused" state to stage changes in the way a Google Ads campaign
 // does).
 export default function TagManagerSection({ clientId, deployments }: { clientId: string; deployments: Deployment[] }) {
+  const { tr } = useI18n();
   const router = useRouter();
   const [requesting, setRequesting] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -52,14 +54,14 @@ export default function TagManagerSection({ clientId, deployments }: { clientId:
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to request deployment');
+        setError(d.error ?? tr("Failed to request deployment"));
         return;
       }
       setForm(emptyForm);
       setRequesting(false);
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to request deployment — network error');
+      setError(err.message ?? tr("Failed to request deployment — network error"));
     } finally {
       setSaving(false);
     }
@@ -73,12 +75,12 @@ export default function TagManagerSection({ clientId, deployments }: { clientId:
       const res = await fetch(`/api/gtm-deployments/${id}/approve`, { method: 'POST' });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to approve deployment');
+        setError(d.error ?? tr("Failed to approve deployment"));
         return;
       }
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to approve deployment — network error');
+      setError(err.message ?? tr("Failed to approve deployment — network error"));
     } finally {
       setApprovingId(null);
     }
@@ -87,66 +89,65 @@ export default function TagManagerSection({ clientId, deployments }: { clientId:
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <h2 style={{ fontSize: '1.1rem' }}>Tag Manager</h2>
+        <h2 style={{ fontSize: '1.1rem' }}>{tr("Tag Manager")}</h2>
         <button className="btn btn-secondary" onClick={() => setRequesting(!requesting)}>
-          {requesting ? 'Cancel' : '+ Request tag'}
+          {requesting ? tr("Cancel") : tr("+ Request tag")}
         </button>
       </div>
       <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: 12 }}>
-        Requesting only records what's wanted — nothing is created or published on the client's site until it's
-        approved below.
+        {tr("Requesting only records what's wanted — nothing is created or published on the client's site until it's approved below.")}
       </p>
 
       {requesting && (
         <form onSubmit={handleRequest} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--card-border)' }}>
-          <label>Tag type</label>
+          <label>{tr("Tag type")}</label>
           <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as typeof form.type })}>
-            <option value="GA4_CONFIG">GA4 Configuration</option>
-            <option value="GOOGLE_ADS_CONVERSION">Google Ads Conversion Tracking</option>
-            <option value="REMARKETING">Google Ads Remarketing</option>
+            <option value="GA4_CONFIG">{tr("GA4 Configuration")}</option>
+            <option value="GOOGLE_ADS_CONVERSION">{tr("Google Ads Conversion Tracking")}</option>
+            <option value="REMARKETING">{tr("Google Ads Remarketing")}</option>
           </select>
-          <label>Tag name</label>
+          <label>{tr("Tag name")}</label>
           <input
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            placeholder="e.g. GA4 Config - Main site"
+            placeholder={tr("e.g. GA4 Config - Main site")}
             required
           />
           {form.type === 'GA4_CONFIG' && (
             <>
-              <label>Measurement ID</label>
+              <label>{tr("Measurement ID")}</label>
               <input
                 value={form.measurementId}
                 onChange={(e) => setForm({ ...form, measurementId: e.target.value })}
-                placeholder="G-XXXXXXXXXX"
+                placeholder={tr("G-XXXXXXXXXX")}
                 required
               />
             </>
           )}
           {(form.type === 'GOOGLE_ADS_CONVERSION' || form.type === 'REMARKETING') && (
             <>
-              <label>Google Ads Conversion ID</label>
+              <label>{tr("Google Ads Conversion ID")}</label>
               <input
                 value={form.conversionId}
                 onChange={(e) => setForm({ ...form, conversionId: e.target.value })}
-                placeholder="AW-XXXXXXXXX"
+                placeholder={tr("AW-XXXXXXXXX")}
                 required
               />
             </>
           )}
           {form.type === 'GOOGLE_ADS_CONVERSION' && (
             <>
-              <label>Conversion label</label>
+              <label>{tr("Conversion label")}</label>
               <input
                 value={form.conversionLabel}
                 onChange={(e) => setForm({ ...form, conversionLabel: e.target.value })}
-                placeholder="AbCdEfGhIjKlMnOp"
+                placeholder={tr("AbCdEfGhIjKlMnOp")}
                 required
               />
             </>
           )}
           <button className="btn" type="submit" disabled={saving} style={{ marginTop: 10 }}>
-            {saving ? 'Requesting…' : 'Request deployment'}
+            {saving ? tr("Requesting…") : tr("Request deployment")}
           </button>
         </form>
       )}
@@ -154,7 +155,7 @@ export default function TagManagerSection({ clientId, deployments }: { clientId:
       {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: 10 }}>{error}</p>}
 
       {deployments.length === 0 ? (
-        <p style={{ color: 'var(--text-dim)' }}>No tag deployments yet.</p>
+        <p style={{ color: 'var(--text-dim)' }}>{tr("No tag deployments yet.")}</p>
       ) : (
         deployments.map((d) => {
           const payload = JSON.parse(d.payloadJson);
@@ -173,7 +174,7 @@ export default function TagManagerSection({ clientId, deployments }: { clientId:
                     onClick={() => handleApprove(d.id)}
                     disabled={approvingId === d.id}
                   >
-                    {approvingId === d.id ? 'Publishing…' : 'Approve & publish'}
+                    {approvingId === d.id ? tr("Publishing…") : tr("Approve & publish")}
                   </button>
                 )}
               </div>

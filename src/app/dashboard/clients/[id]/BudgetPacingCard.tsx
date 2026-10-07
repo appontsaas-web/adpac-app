@@ -70,7 +70,7 @@ function ProgressBar({ pct }: { pct: number | null }) {
 // dashboard's own date-range picker — pacing only means something relative
 // to a real billing month, not an arbitrary rolling window.
 export default function BudgetPacingCard({ googleAdsAccountId }: { googleAdsAccountId: string }) {
-  const { money } = useI18n();
+  const { tr, money } = useI18n();
   const [data, setData] = useState<PacingResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,12 +82,12 @@ export default function BudgetPacingCard({ googleAdsAccountId }: { googleAdsAcco
       const res = await fetch(`/api/metrics/pacing?googleAdsAccountId=${googleAdsAccountId}`);
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d?.error ?? 'Failed to load budget pacing');
+        setError(d?.error ?? tr("Failed to load budget pacing"));
         return;
       }
       setData(await res.json());
     } catch (err: any) {
-      setError(err.message ?? 'Failed to load budget pacing — network error');
+      setError(err.message ?? tr("Failed to load budget pacing — network error"));
     } finally {
       setLoading(false);
     }
@@ -100,23 +100,22 @@ export default function BudgetPacingCard({ googleAdsAccountId }: { googleAdsAcco
   return (
     <div className="card" style={{ marginTop: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 10 }}>
-        <h2 style={{ fontSize: '1.1rem' }}>Budget pacing</h2>
+        <h2 style={{ fontSize: '1.1rem' }}>{tr("Budget pacing")}</h2>
         {data && (
           <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
-            {data.monthLabel} — day {data.daysElapsed} of {data.daysInMonth}
+            {data.monthLabel} {tr("— day")}{' '}{data.daysElapsed} {tr("of")}{' '}{data.daysInMonth}
           </span>
         )}
       </div>
       <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginBottom: 14 }}>
-        Month-to-date spend vs. what each campaign's daily budget implies it should have spent by today, plus a
-        projection of where spend lands if the current daily rate holds through month-end.
+        {tr("Month-to-date spend vs. what each campaign's daily budget implies it should have spent by today, plus a projection of where spend lands if the current daily rate holds through month-end.")}
       </p>
 
       {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: 10 }}>{error}</p>}
-      {loading && !data && <p style={{ color: 'var(--text-dim)' }}>Loading…</p>}
+      {loading && !data && <p style={{ color: 'var(--text-dim)' }}>{tr("Loading…")}</p>}
 
       {data && data.campaigns.length === 0 && (
-        <p style={{ color: 'var(--text-dim)' }}>No live campaigns with a daily budget set on this account.</p>
+        <p style={{ color: 'var(--text-dim)' }}>{tr("No live campaigns with a daily budget set on this account.")}</p>
       )}
 
       {data && data.campaigns.length > 0 && (
@@ -131,19 +130,19 @@ export default function BudgetPacingCard({ googleAdsAccountId }: { googleAdsAcco
             }}
           >
             <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Monthly budget</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{tr("Monthly budget")}</div>
               <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{money(data.totals.monthlyBudgetCents)}</div>
             </div>
             <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>MTD spend</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{tr("MTD spend")}</div>
               <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{money(data.totals.monthToDateSpendCents)}</div>
             </div>
             <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Expected by today</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{tr("Expected by today")}</div>
               <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{money(data.totals.expectedSpendCents)}</div>
             </div>
             <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Projected month-end</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{tr("Projected month-end")}</div>
               <div
                 style={{
                   fontSize: '1.1rem',
@@ -163,12 +162,12 @@ export default function BudgetPacingCard({ googleAdsAccountId }: { googleAdsAcco
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--card-border)', textAlign: 'left', color: 'var(--text-dim)' }}>
-                  <th style={{ padding: '8px 6px' }}>Campaign</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>Daily budget</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>MTD spend</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>Expected</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>Projected EOM</th>
-                  <th style={{ padding: '8px 6px', minWidth: 140 }}>Pace</th>
+                  <th style={{ padding: '8px 6px' }}>{tr("Campaign")}</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Daily budget")}</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("MTD spend")}</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Expected")}</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Projected EOM")}</th>
+                  <th style={{ padding: '8px 6px', minWidth: 140 }}>{tr("Pace")}</th>
                   <th style={{ padding: '8px 6px' }}></th>
                 </tr>
               </thead>
@@ -176,7 +175,7 @@ export default function BudgetPacingCard({ googleAdsAccountId }: { googleAdsAcco
                 {data.campaigns.map((c) => (
                   <tr key={c.campaignId} style={{ borderBottom: '1px solid var(--card-border)' }}>
                     <td style={{ padding: '8px 6px' }}>{c.name}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(c.dailyBudgetCents)}/day</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(c.dailyBudgetCents)}{tr("/day")}</td>
                     <td style={{ padding: '8px 6px', textAlign: 'right' }}>{money(c.monthToDateSpendCents)}</td>
                     <td style={{ padding: '8px 6px', textAlign: 'right', color: 'var(--text-dim)' }}>{money(c.expectedSpendCents)}</td>
                     <td

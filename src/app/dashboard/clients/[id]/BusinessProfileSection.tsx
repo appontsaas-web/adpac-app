@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -63,6 +64,7 @@ export default function BusinessProfileSection({
   locations: BusinessLocationRow[];
   reviews: BusinessReviewRow[];
 }) {
+  const { tr } = useI18n();
   const router = useRouter();
   const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -76,7 +78,7 @@ export default function BusinessProfileSection({
       const res = await fetch(`/api/google-business/sync?accountId=${accountId}`, { method: 'POST' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error ?? 'Sync failed');
+        setError(data.error ?? tr("Sync failed"));
         return;
       }
       setMessage(
@@ -85,7 +87,7 @@ export default function BusinessProfileSection({
       if (data.errors?.length) setError(data.errors.join('; '));
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Sync failed — network error');
+      setError(err.message ?? tr("Sync failed — network error"));
     } finally {
       setSyncing(false);
     }
@@ -95,14 +97,13 @@ export default function BusinessProfileSection({
     <>
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 10 }}>
-          <h2 style={{ fontSize: '1.1rem' }}>Branches</h2>
+          <h2 style={{ fontSize: '1.1rem' }}>{tr("Branches")}</h2>
           <button className="btn btn-secondary" onClick={handleSync} disabled={syncing}>
-            {syncing ? 'Syncing…' : 'Sync now'}
+            {syncing ? tr("Syncing…") : tr("Sync now")}
           </button>
         </div>
         <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: 12 }}>
-          Locations, their last-30-day search/maps visibility, and customer actions (calls, website clicks,
-          direction requests) — pulled live from Google Business Profile.
+          {tr("Locations, their last-30-day search/maps visibility, and customer actions (calls, website clicks, direction requests) — pulled live from Google Business Profile.")}
         </p>
 
         {message && <p style={{ color: 'var(--accent2)', fontSize: '0.82rem', marginBottom: 10 }}>{message}</p>}
@@ -110,8 +111,7 @@ export default function BusinessProfileSection({
 
         {locations.length === 0 ? (
           <p style={{ color: 'var(--text-dim)' }}>
-            No branches yet. Click "Sync now" to pull them in (requires the client to have added your Google
-            account as a Manager/Owner on their Business Profile).
+            {tr("No branches yet. Click \"Sync now\" to pull them in (requires the client to have added your Google account as a Manager/Owner on their Business Profile).")}
           </p>
         ) : (
           locations.map((loc) => (
@@ -132,11 +132,11 @@ export default function BusinessProfileSection({
                 </p>
               )}
               <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: 6 }}>
-                <span>Search impressions: <strong style={{ color: 'var(--text)' }}>{loc.last7d.searchImpressions.toLocaleString()}</strong></span>
-                <span>Maps impressions: <strong style={{ color: 'var(--text)' }}>{loc.last7d.mapsImpressions.toLocaleString()}</strong></span>
-                <span>Calls: <strong style={{ color: 'var(--text)' }}>{loc.last7d.callClicks.toLocaleString()}</strong></span>
-                <span>Website clicks: <strong style={{ color: 'var(--text)' }}>{loc.last7d.websiteClicks.toLocaleString()}</strong></span>
-                <span>Direction requests: <strong style={{ color: 'var(--text)' }}>{loc.last7d.directionRequests.toLocaleString()}</strong></span>
+                <span>{tr("Search impressions:")}{' '}<strong style={{ color: 'var(--text)' }}>{loc.last7d.searchImpressions.toLocaleString()}</strong></span>
+                <span>{tr("Maps impressions:")}{' '}<strong style={{ color: 'var(--text)' }}>{loc.last7d.mapsImpressions.toLocaleString()}</strong></span>
+                <span>{tr("Calls:")}{' '}<strong style={{ color: 'var(--text)' }}>{loc.last7d.callClicks.toLocaleString()}</strong></span>
+                <span>{tr("Website clicks:")}{' '}<strong style={{ color: 'var(--text)' }}>{loc.last7d.websiteClicks.toLocaleString()}</strong></span>
+                <span>{tr("Direction requests:")}{' '}<strong style={{ color: 'var(--text)' }}>{loc.last7d.directionRequests.toLocaleString()}</strong></span>
               </div>
             </div>
           ))
@@ -144,31 +144,30 @@ export default function BusinessProfileSection({
       </div>
 
       <div className="card">
-        <h2 style={{ fontSize: '1.1rem', marginBottom: 4 }}>Reviews</h2>
+        <h2 style={{ fontSize: '1.1rem', marginBottom: 4 }}>{tr("Reviews")}</h2>
         <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: 12 }}>
-          Every synced review across all branches, most recent first. Drafting and approving replies happens
-          in the AI review panel below.
+          {tr("Every synced review across all branches, most recent first. Drafting and approving replies happens in the AI review panel below.")}
         </p>
 
         {reviews.length === 0 ? (
-          <p style={{ color: 'var(--text-dim)' }}>No reviews synced yet.</p>
+          <p style={{ color: 'var(--text-dim)' }}>{tr("No reviews synced yet.")}</p>
         ) : (
           reviews.map((r) => (
             <div key={r.id} style={{ borderBottom: '1px solid var(--card-border)', padding: '10px 0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                 <div style={{ fontSize: '0.85rem' }}>
                   <Stars rating={r.starRating} />{' '}
-                  <strong>{r.reviewerName ?? 'Anonymous'}</strong>{' '}
+                  <strong>{r.reviewerName ?? tr("Anonymous")}</strong>{' '}
                   <span style={{ color: 'var(--text-dim)' }}>· {r.locationTitle}</span>
                 </div>
                 <span className={`badge ${replyStateBadge[r.replyState] ?? 'badge-draft'}`}>
-                  {r.replyState === 'NONE' ? 'No reply' : r.replyState.replaceAll('_', ' ')}
+                  {r.replyState === 'NONE' ? tr("No reply") : r.replyState.replaceAll('_', ' ')}
                 </span>
               </div>
               {r.comment && <p style={{ fontSize: '0.85rem', margin: '6px 0' }}>{r.comment}</p>}
               {r.replyComment && (
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', background: 'var(--bg-alt)', borderRadius: 6, padding: '6px 8px', marginTop: 4 }}>
-                  <strong style={{ color: 'var(--text)' }}>Reply:</strong> {r.replyComment}
+                  <strong style={{ color: 'var(--text)' }}>{tr("Reply:")}</strong> {r.replyComment}
                 </p>
               )}
             </div>

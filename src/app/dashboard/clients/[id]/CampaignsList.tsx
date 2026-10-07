@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 import { useState } from 'react';
 import CampaignCard from './CampaignCard';
 
@@ -39,6 +40,7 @@ export default function CampaignsList({
   readOnly?: boolean;
   isAdmin?: boolean;
 }) {
+  const { tr } = useI18n();
   const [showHidden, setShowHidden] = useState(false);
 
   const visible = campaigns.filter((c) => !c.hiddenFromList);
@@ -46,20 +48,20 @@ export default function CampaignsList({
 
   return (
     <div>
-      {campaigns.length === 0 && <p style={{ color: 'var(--text-dim)' }}>No campaigns yet.</p>}
+      {campaigns.length === 0 && <p style={{ color: 'var(--text-dim)' }}>{tr("No campaigns yet.")}</p>}
 
       {visible.map((c) => (
         <CampaignCard key={c.id} campaign={c} readOnly={readOnly} isAdmin={isAdmin} />
       ))}
 
       {isAdmin && visible.length === 0 && hidden.length > 0 && (
-        <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>All campaigns are hidden.</p>
+        <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>{tr("All campaigns are hidden.")}</p>
       )}
 
       {isAdmin && hidden.length > 0 && (
         <div style={{ marginTop: 12 }}>
           <button className="btn btn-secondary" onClick={() => setShowHidden(!showHidden)} style={{ fontSize: '0.8rem' }}>
-            {showHidden ? 'Hide' : 'Show'} hidden campaigns ({hidden.length})
+            {showHidden ? tr("Hide") : tr("Show")} {tr("hidden campaigns (")}{hidden.length})
           </button>
           {showHidden && (
             <div style={{ marginTop: 8 }}>

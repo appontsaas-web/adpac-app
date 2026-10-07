@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -44,6 +45,7 @@ export default function MetaCampaignsSection({
   currencyCode: string | null;
   campaigns: MetaCampaignRow[];
 }) {
+  const { tr } = useI18n();
   const router = useRouter();
   const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -57,14 +59,14 @@ export default function MetaCampaignsSection({
       const res = await fetch(`/api/meta/sync?accountId=${accountId}`, { method: 'POST' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error ?? 'Sync failed');
+        setError(data.error ?? tr("Sync failed"));
         return;
       }
       setMessage(`Synced ${data.campaignsSynced} campaign(s), ${data.metricsSynced} metric row(s).`);
       if (data.errors?.length) setError(data.errors.join('; '));
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Sync failed — network error');
+      setError(err.message ?? tr("Sync failed — network error"));
     } finally {
       setSyncing(false);
     }
@@ -73,21 +75,20 @@ export default function MetaCampaignsSection({
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 10 }}>
-        <h2 style={{ fontSize: '1.1rem' }}>Meta campaigns</h2>
+        <h2 style={{ fontSize: '1.1rem' }}>{tr("Meta campaigns")}</h2>
         <button className="btn btn-secondary" onClick={handleSync} disabled={syncing}>
-          {syncing ? 'Syncing…' : 'Sync now'}
+          {syncing ? tr("Syncing…") : tr("Sync now")}
         </button>
       </div>
       <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: 12 }}>
-        Campaigns imported from the connected Meta ad account (Facebook &amp; Instagram share this one account),
-        and their last-7-day performance{currencyCode ? ` — figures shown in USD, converted from the account's ${currencyCode} billing currency` : ''}.
+        {tr("Campaigns imported from the connected Meta ad account (Facebook & Instagram share this one account), and their last-7-day performance")}{currencyCode ? ` — figures shown in USD, converted from the account's ${currencyCode} billing currency` : ''}.
       </p>
 
       {message && <p style={{ color: 'var(--accent2)', fontSize: '0.82rem', marginBottom: 10 }}>{message}</p>}
       {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: 10 }}>{error}</p>}
 
       {campaigns.length === 0 ? (
-        <p style={{ color: 'var(--text-dim)' }}>No campaigns yet. Click "Sync now" to pull them in.</p>
+        <p style={{ color: 'var(--text-dim)' }}>{tr("No campaigns yet. Click \"Sync now\" to pull them in.")}</p>
       ) : (
         campaigns.map((c) => (
           <div key={c.id} style={{ borderBottom: '1px solid var(--card-border)', padding: '10px 0' }}>
@@ -103,10 +104,10 @@ export default function MetaCampaignsSection({
               </span>
             </div>
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: 6 }}>
-              <span>Impressions: <strong style={{ color: 'var(--text)' }}>{c.last7d.impressions.toLocaleString()}</strong></span>
-              <span>Clicks: <strong style={{ color: 'var(--text)' }}>{c.last7d.clicks.toLocaleString()}</strong></span>
-              <span>Spend: <strong style={{ color: 'var(--text)' }}>{formatCents(c.last7d.costCents)}</strong></span>
-              <span>Conversions: <strong style={{ color: 'var(--text)' }}>{c.last7d.conversions.toLocaleString()}</strong></span>
+              <span>{tr("Impressions:")}{' '}<strong style={{ color: 'var(--text)' }}>{c.last7d.impressions.toLocaleString()}</strong></span>
+              <span>{tr("Clicks:")}{' '}<strong style={{ color: 'var(--text)' }}>{c.last7d.clicks.toLocaleString()}</strong></span>
+              <span>{tr("Spend:")}{' '}<strong style={{ color: 'var(--text)' }}>{formatCents(c.last7d.costCents)}</strong></span>
+              <span>{tr("Conversions:")}{' '}<strong style={{ color: 'var(--text)' }}>{c.last7d.conversions.toLocaleString()}</strong></span>
             </div>
           </div>
         ))

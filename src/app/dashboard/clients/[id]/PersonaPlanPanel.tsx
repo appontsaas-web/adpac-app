@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 import { useEffect, useState } from 'react';
 
 interface Persona {
@@ -62,6 +63,7 @@ function defaultPeriodLabel(periodType: string) {
 }
 
 export default function PersonaPlanPanel({ clientId }: { clientId: string }) {
+  const { tr } = useI18n();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -97,12 +99,12 @@ export default function PersonaPlanPanel({ clientId }: { clientId: string }) {
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(d.error ?? 'Failed to generate plan');
+        setError(d.error ?? tr("Failed to generate plan"));
         return;
       }
       await loadPlans();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to generate plan — network error');
+      setError(err.message ?? tr("Failed to generate plan — network error"));
     } finally {
       setGenerating(false);
     }
@@ -116,12 +118,12 @@ export default function PersonaPlanPanel({ clientId }: { clientId: string }) {
       const res = await fetch(`/api/marketing-plans/${id}/send`, { method: 'POST' });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(d.error ?? 'Failed to send plan');
+        setError(d.error ?? tr("Failed to send plan"));
         return;
       }
       await loadPlans();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to send plan — network error');
+      setError(err.message ?? tr("Failed to send plan — network error"));
     } finally {
       setSendingId(null);
     }
@@ -129,16 +131,14 @@ export default function PersonaPlanPanel({ clientId }: { clientId: string }) {
 
   return (
     <div className="card">
-      <h2 style={{ fontSize: '1.1rem', marginBottom: 4 }}>Persona building &amp; audience study</h2>
+      <h2 style={{ fontSize: '1.1rem', marginBottom: 4 }}>{tr("Persona building & audience study")}</h2>
       <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: 14 }}>
-        Builds audience personas, ad copy, and a plan from the client's latest monthly input (submitted via their
-        portal) plus real age/gender/location/device performance data from their connected accounts. The client
-        reviews and approves it in their own portal before anything ships.
+        {tr("Builds audience personas, ad copy, and a plan from the client's latest monthly input (submitted via their portal) plus real age/gender/location/device performance data from their connected accounts. The client reviews and approves it in their own portal before anything ships.")}
       </p>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 16 }}>
         <div>
-          <label style={{ fontSize: '0.75rem' }}>Period</label>
+          <label style={{ fontSize: '0.75rem' }}>{tr("Period")}</label>
           <select
             value={periodType}
             onChange={(e) => {
@@ -147,27 +147,26 @@ export default function PersonaPlanPanel({ clientId }: { clientId: string }) {
               setPeriodLabel(defaultPeriodLabel(v));
             }}
           >
-            <option value="MONTHLY">Monthly</option>
-            <option value="QUARTERLY">Quarterly</option>
+            <option value="MONTHLY">{tr("Monthly")}</option>
+            <option value="QUARTERLY">{tr("Quarterly")}</option>
           </select>
         </div>
         <div>
-          <label style={{ fontSize: '0.75rem' }}>Label</label>
+          <label style={{ fontSize: '0.75rem' }}>{tr("Label")}</label>
           <input value={periodLabel} onChange={(e) => setPeriodLabel(e.target.value)} style={{ width: 110 }} />
         </div>
         <button className="btn btn-secondary" onClick={handleGenerate} disabled={generating}>
-          {generating ? 'Generating…' : 'Generate plan'}
+          {generating ? tr("Generating…") : tr("Generate plan")}
         </button>
       </div>
 
       {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: 10 }}>{error}</p>}
 
       {loading ? (
-        <p style={{ color: 'var(--text-dim)' }}>Loading…</p>
+        <p style={{ color: 'var(--text-dim)' }}>{tr("Loading…")}</p>
       ) : plans.length === 0 ? (
         <p style={{ color: 'var(--text-dim)' }}>
-          No plans yet. Needs at least one monthly input submitted via the client's portal and some synced
-          audience-demographic data.
+          {tr("No plans yet. Needs at least one monthly input submitted via the client's portal and some synced audience-demographic data.")}
         </p>
       ) : (
         plans.map((plan) => {
@@ -183,7 +182,7 @@ export default function PersonaPlanPanel({ clientId }: { clientId: string }) {
               <summary style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                 <span style={{ fontSize: '0.88rem' }}>
                   <span className={`badge ${statusBadge[plan.status] ?? 'badge-draft'}`}>{statusLabel[plan.status] ?? plan.status}</span>{' '}
-                  <strong>{plan.periodType === 'QUARTERLY' ? 'Quarterly' : 'Monthly'} — {plan.periodLabel}</strong>
+                  <strong>{plan.periodType === 'QUARTERLY' ? tr("Quarterly") : tr("Monthly")} — {plan.periodLabel}</strong>
                 </span>
                 {plan.status === 'DRAFT' && (
                   <button
@@ -195,20 +194,20 @@ export default function PersonaPlanPanel({ clientId }: { clientId: string }) {
                     }}
                     disabled={sendingId === plan.id}
                   >
-                    {sendingId === plan.id ? 'Sending…' : 'Send to client'}
+                    {sendingId === plan.id ? tr("Sending…") : tr("Send to client")}
                   </button>
                 )}
               </summary>
 
               <div style={{ marginTop: 12, fontSize: '0.85rem' }}>
                 <p style={{ marginBottom: 10 }}>
-                  <strong>Objectives:</strong> {objectives}
+                  <strong>{tr("Objectives:")}</strong> {objectives}
                 </p>
                 <p style={{ color: 'var(--text-dim)', marginBottom: 14 }}>{narrative}</p>
 
                 {plan.clientFeedback && (
                   <p style={{ background: 'var(--bg-alt)', border: '1px solid var(--card-border)', borderRadius: 8, padding: '8px 10px', marginBottom: 14 }}>
-                    <strong>Client feedback:</strong> {plan.clientFeedback}
+                    <strong>{tr("Client feedback:")}</strong> {plan.clientFeedback}
                   </p>
                 )}
 
@@ -222,18 +221,18 @@ export default function PersonaPlanPanel({ clientId }: { clientId: string }) {
                         <em>{p.demographicBasis}</em>
                       </div>
                       <div style={{ fontSize: '0.78rem', marginBottom: 4 }}>
-                        <strong>Motivations:</strong> {p.motivations.join(' · ')}
+                        <strong>{tr("Motivations:")}</strong> {p.motivations.join(' · ')}
                       </div>
                       <div style={{ fontSize: '0.78rem', marginBottom: 8 }}>
-                        <strong>Pain points:</strong> {p.painPoints.join(' · ')}
+                        <strong>{tr("Pain points:")}</strong> {p.painPoints.join(' · ')}
                       </div>
                       {copy && (
                         <div style={{ fontSize: '0.78rem' }}>
                           <div>
-                            <strong>Headlines:</strong> {copy.headlines.join(' · ')}
+                            <strong>{tr("Headlines:")}</strong> {copy.headlines.join(' · ')}
                           </div>
                           <div>
-                            <strong>Descriptions:</strong> {copy.descriptions.join(' · ')}
+                            <strong>{tr("Descriptions:")}</strong> {copy.descriptions.join(' · ')}
                           </div>
                         </div>
                       )}
@@ -243,11 +242,11 @@ export default function PersonaPlanPanel({ clientId }: { clientId: string }) {
 
                 {proposedActions.length > 0 && (
                   <div style={{ fontSize: '0.8rem' }}>
-                    <strong>Proposed campaign changes (once client approves):</strong>
+                    <strong>{tr("Proposed campaign changes (once client approves):")}</strong>
                     <ul style={{ marginTop: 6, paddingLeft: 18 }}>
                       {proposedActions.map((a, i) => (
                         <li key={i} style={{ marginBottom: 6 }}>
-                          Rewrite ad copy for <strong>{a.campaignId}</strong> toward persona <strong>{a.personaName}</strong> —{' '}
+                          {tr("Rewrite ad copy for")}{' '}<strong>{a.campaignId}</strong> {tr("toward persona")}{' '}<strong>{a.personaName}</strong> —{' '}
                           {a.rationale}
                         </li>
                       ))}

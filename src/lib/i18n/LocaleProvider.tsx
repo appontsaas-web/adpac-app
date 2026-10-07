@@ -3,6 +3,7 @@
 import { createContext, useContext, useMemo } from 'react';
 import type { Locale } from './config';
 import { translate, type MessageKey } from './messages';
+import { trString } from './arStrings';
 import { formatMoney, formatNumber, formatPercent, formatDate } from './format';
 
 interface Ctx {
@@ -35,6 +36,7 @@ export function useI18n() {
       locale,
       currency,
       dir: locale === 'ar' ? ('rtl' as const) : ('ltr' as const),
+      tr: (en: string, vars?: Record<string, string | number>) => trString(locale, en, vars),
       t: (key: MessageKey, vars?: Record<string, string | number>) => translate(locale, key, vars),
       money: (usdCents: number) => formatMoney(usdCents, locale, currency),
       /** Always USD — for AdPac's own billing (invoices, tokens), which is priced in USD regardless of the client's display currency. */

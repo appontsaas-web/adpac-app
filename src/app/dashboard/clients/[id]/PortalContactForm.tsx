@@ -20,7 +20,7 @@ export default function PortalContactForm({
   readOnly?: boolean;
 }) {
   const router = useRouter();
-  const { t } = useI18n();
+  const { tr, t } = useI18n();
   const [name, setName] = useState(initialName ?? '');
   const [email, setEmail] = useState(initialEmail ?? '');
   const [saving, setSaving] = useState(false);
@@ -58,13 +58,13 @@ export default function PortalContactForm({
         {t('cards.portalHelp')}
       </p>
       <label>{t('cards.contactName')}</label>
-      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Doe" disabled={readOnly} />
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder={tr("Jane Doe")} disabled={readOnly} />
       <label>{t('cards.contactEmail')}</label>
       <input
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        placeholder="jane@clientcompany.com"
+        placeholder={tr("jane@clientcompany.com")}
         disabled={readOnly}
       />
       {!readOnly && (

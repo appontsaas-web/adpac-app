@@ -1,3 +1,4 @@
+import { getTr } from '@/lib/i18n/server';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/access';
 import { db } from '@/lib/db';
@@ -6,6 +7,7 @@ import TeamTable from './TeamTable';
 import PositionsManager from './PositionsManager';
 
 export default async function TeamPage() {
+  const tr = getTr();
   const me = await getCurrentUser();
   if (!me) redirect('/login');
   if (me.role !== 'ADMIN') redirect('/dashboard');
@@ -21,10 +23,9 @@ export default async function TeamPage() {
   return (
     <div className="container">
       <DashboardNav />
-      <h1 style={{ fontSize: '1.6rem', marginBottom: 4 }}>Team</h1>
+      <h1 style={{ fontSize: '1.6rem', marginBottom: 4 }}>{tr("Team")}</h1>
       <p style={{ color: 'var(--text-dim)', marginBottom: 24 }}>
-        Admins have full access to everything, including Finance. Staff only see clients you assign them (from
-        that client's page), and a Position controls what they can actually do there.
+        {tr("Admins have full access to everything, including Finance. Staff only see clients you assign them (from that client's page), and a Position controls what they can actually do there.")}
       </p>
       <PositionsManager positions={positions} />
       <TeamTable users={users} positions={positions} currentUserId={me.id} />

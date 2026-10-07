@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 import { Fragment, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -26,6 +27,7 @@ export default function TeamTable({
   positions: Position[];
   currentUserId: string;
 }) {
+  const { tr } = useI18n();
   const router = useRouter();
   const [adding, setAdding] = useState(false);
   const [email, setEmail] = useState('');
@@ -53,7 +55,7 @@ export default function TeamTable({
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to create user');
+        setError(d.error ?? tr("Failed to create user"));
         return;
       }
       setEmail('');
@@ -64,7 +66,7 @@ export default function TeamTable({
       setAdding(false);
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to create user — network error');
+      setError(err.message ?? tr("Failed to create user — network error"));
     } finally {
       setSaving(false);
     }
@@ -81,12 +83,12 @@ export default function TeamTable({
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to update position');
+        setError(d.error ?? tr("Failed to update position"));
         return;
       }
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to update position — network error');
+      setError(err.message ?? tr("Failed to update position — network error"));
     } finally {
       setBusyId(null);
     }
@@ -134,12 +136,12 @@ export default function TeamTable({
       const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to remove user');
+        setError(d.error ?? tr("Failed to remove user"));
         return;
       }
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to remove user — network error');
+      setError(err.message ?? tr("Failed to remove user — network error"));
     } finally {
       setBusyId(null);
     }
@@ -148,36 +150,36 @@ export default function TeamTable({
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <h2 style={{ fontSize: '1.1rem' }}>Team</h2>
+        <h2 style={{ fontSize: '1.1rem' }}>{tr("Team")}</h2>
         <button className="btn btn-secondary" onClick={() => setAdding(!adding)}>
-          {adding ? 'Cancel' : '+ Add team member'}
+          {adding ? tr("Cancel") : tr("+ Add team member")}
         </button>
       </div>
 
       {adding && (
         <form onSubmit={handleAdd} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--card-border)' }}>
-          <label>Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Doe" />
-          <label>Email</label>
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@adpac.to" />
-          <label>Temporary password (8+ characters)</label>
+          <label>{tr("Name")}</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={tr("Jane Doe")} />
+          <label>{tr("Email")}</label>
+          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={tr("jane@adpac.to")} />
+          <label>{tr("Temporary password (8+ characters)")}</label>
           <input
             type="text"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="They should change this after first login"
+            placeholder={tr("They should change this after first login")}
           />
-          <label>Role</label>
+          <label>{tr("Role")}</label>
           <select value={role} onChange={(e) => setRole(e.target.value)}>
-            <option value="STAFF">Staff — only sees clients you assign them</option>
-            <option value="ADMIN">Admin — full access to everything, including Finance</option>
+            <option value="STAFF">{tr("Staff — only sees clients you assign them")}</option>
+            <option value="ADMIN">{tr("Admin — full access to everything, including Finance")}</option>
           </select>
           {role === 'STAFF' && (
             <>
-              <label>Position (optional — controls what they can do; assign clients from each client's page)</label>
+              <label>{tr("Position (optional — controls what they can do; assign clients from each client's page)")}</label>
               <select value={positionId} onChange={(e) => setPositionId(e.target.value)}>
-                <option value="">No position (view-only, even with Edit client access)</option>
+                <option value="">{tr("No position (view-only, even with Edit client access)")}</option>
                 {positions.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -187,7 +189,7 @@ export default function TeamTable({
             </>
           )}
           <button className="btn" type="submit" disabled={saving}>
-            {saving ? 'Creating…' : 'Create account'}
+            {saving ? tr("Creating…") : tr("Create account")}
           </button>
         </form>
       )}
@@ -197,10 +199,10 @@ export default function TeamTable({
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid var(--card-border)', textAlign: 'left', color: 'var(--text-dim)' }}>
-            <th style={{ padding: '8px 6px' }}>Name</th>
-            <th style={{ padding: '8px 6px' }}>Email</th>
-            <th style={{ padding: '8px 6px' }}>Role</th>
-            <th style={{ padding: '8px 6px' }}>Position</th>
+            <th style={{ padding: '8px 6px' }}>{tr("Name")}</th>
+            <th style={{ padding: '8px 6px' }}>{tr("Email")}</th>
+            <th style={{ padding: '8px 6px' }}>{tr("Role")}</th>
+            <th style={{ padding: '8px 6px' }}>{tr("Position")}</th>
             <th style={{ padding: '8px 6px' }}></th>
           </tr>
         </thead>
@@ -215,7 +217,7 @@ export default function TeamTable({
                 </td>
                 <td style={{ padding: '8px 6px' }}>
                   {u.role === 'ADMIN' ? (
-                    <span style={{ color: 'var(--text-dim)' }}>— (full access)</span>
+                    <span style={{ color: 'var(--text-dim)' }}>{tr("— (full access)")}</span>
                   ) : (
                     <select
                       value={u.positionId ?? ''}
@@ -223,7 +225,7 @@ export default function TeamTable({
                       disabled={busyId === u.id}
                       style={{ margin: 0, width: 'auto' }}
                     >
-                      <option value="">No position</option>
+                      <option value="">{tr("No position")}</option>
                       {positions.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name}
@@ -238,7 +240,7 @@ export default function TeamTable({
                     style={{ fontSize: '0.75rem', padding: '5px 10px', marginRight: u.id !== currentUserId ? 6 : 0 }}
                     onClick={() => (resettingId === u.id ? setResettingId(null) : openReset(u.id))}
                   >
-                    {resettingId === u.id ? 'Cancel' : 'Reset password'}
+                    {resettingId === u.id ? tr("Cancel") : tr("Reset password")}
                   </button>
                   {u.id !== currentUserId && (
                     <button
@@ -247,7 +249,7 @@ export default function TeamTable({
                       onClick={() => handleRemove(u.id, u.name || u.email)}
                       disabled={busyId === u.id}
                     >
-                      {busyId === u.id ? '…' : 'Remove'}
+                      {busyId === u.id ? '…' : tr("Remove")}
                     </button>
                   )}
                 </td>
@@ -260,7 +262,7 @@ export default function TeamTable({
                         type="text"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="New password (8+ characters)"
+                        placeholder={tr("New password (8+ characters)")}
                         style={{ margin: 0, maxWidth: 260 }}
                       />
                       <button
@@ -269,15 +271,15 @@ export default function TeamTable({
                         onClick={() => handleResetPassword(u.id)}
                         disabled={busyId === u.id}
                       >
-                        {busyId === u.id ? 'Saving…' : 'Save new password'}
+                        {busyId === u.id ? tr("Saving…") : tr("Save new password")}
                       </button>
                       {resetDone === u.id && (
-                        <span style={{ color: 'var(--accent2)', fontSize: '0.8rem' }}>Password updated.</span>
+                        <span style={{ color: 'var(--accent2)', fontSize: '0.8rem' }}>{tr("Password updated.")}</span>
                       )}
                     </div>
                     {resetError && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: 6 }}>{resetError}</p>}
                     <p style={{ color: 'var(--text-dim)', fontSize: '0.78rem', marginTop: 6 }}>
-                      Sets their password directly — they should change it themselves after logging in (Account page).
+                      {tr("Sets their password directly — they should change it themselves after logging in (Account page).")}
                     </p>
                   </td>
                 </tr>

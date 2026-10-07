@@ -29,7 +29,7 @@ const badgeClass: Record<string, string> = {
 // reviews and marks it paid the usual way. Everything else about invoices
 // (create/edit/delete/mark paid directly) is always admin-only.
 export default function InvoicesViewOnly({ clientId, invoices }: { clientId: string; invoices: Invoice[] }) {
-  const { moneyUsd: money, t } = useI18n();
+  const { tr, moneyUsd: money, t } = useI18n();
   const router = useRouter();
   const [requesting, setRequesting] = useState(false);
   const [amount, setAmount] = useState('');
@@ -43,7 +43,7 @@ export default function InvoicesViewOnly({ clientId, invoices }: { clientId: str
     setError(null);
     const amountCents = Math.round(Number(amount) * 100);
     if (!amountCents || amountCents <= 0) {
-      setError('Enter a valid amount greater than 0.');
+      setError(tr("Enter a valid amount greater than 0."));
       return;
     }
     setSaving(true);
@@ -55,7 +55,7 @@ export default function InvoicesViewOnly({ clientId, invoices }: { clientId: str
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to submit recharge request');
+        setError(d.error ?? tr("Failed to submit recharge request"));
         return;
       }
       setAmount('');
@@ -64,7 +64,7 @@ export default function InvoicesViewOnly({ clientId, invoices }: { clientId: str
       setJustRequested(true);
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to submit recharge request — network error');
+      setError(err.message ?? tr("Failed to submit recharge request — network error"));
     } finally {
       setSaving(false);
     }
@@ -75,7 +75,7 @@ export default function InvoicesViewOnly({ clientId, invoices }: { clientId: str
       <TokenBalanceCard clientId={clientId} />
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
-          <h2 style={{ fontSize: '1.1rem' }}>Invoices</h2>
+          <h2 style={{ fontSize: '1.1rem' }}>{tr("Invoices")}</h2>
           <button
             className="btn btn-secondary"
             onClick={() => {
@@ -83,13 +83,13 @@ export default function InvoicesViewOnly({ clientId, invoices }: { clientId: str
               setJustRequested(false);
             }}
           >
-            {requesting ? 'Cancel' : '+ Request recharge'}
+            {requesting ? tr("Cancel") : tr("+ Request recharge")}
           </button>
         </div>
 
         {justRequested && (
           <p style={{ color: 'var(--accent2)', fontSize: '0.82rem', marginBottom: 10 }}>
-            Request sent — an admin will review it and create the invoice.
+            {tr("Request sent — an admin will review it and create the invoice.")}
           </p>
         )}
 
@@ -98,7 +98,7 @@ export default function InvoicesViewOnly({ clientId, invoices }: { clientId: str
             onSubmit={handleRequestRecharge}
             style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--card-border)' }}
           >
-            <label>Amount you'd like to add (USD)</label>
+            <label>{tr("Amount you'd like to add (USD)")}</label>
             <input
               type="number"
               min="0"
@@ -108,13 +108,13 @@ export default function InvoicesViewOnly({ clientId, invoices }: { clientId: str
               placeholder="500.00"
               autoFocus
             />
-            <label>Note (optional)</label>
-            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. topping up for next month" />
+            <label>{tr("Note (optional)")}</label>
+            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder={tr("e.g. topping up for next month")} />
             <button className="btn" type="submit" disabled={saving}>
-              {saving ? 'Sending…' : 'Send request'}
+              {saving ? tr("Sending…") : tr("Send request")}
             </button>
             <p style={{ color: 'var(--text-dim)', fontSize: '0.78rem', marginTop: 6 }}>
-              This creates an unpaid invoice for admin to review — nothing is charged automatically.
+              {tr("This creates an unpaid invoice for admin to review — nothing is charged automatically.")}
             </p>
           </form>
         )}
@@ -122,17 +122,17 @@ export default function InvoicesViewOnly({ clientId, invoices }: { clientId: str
         {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: 10 }}>{error}</p>}
 
         {invoices.length === 0 ? (
-          <p style={{ color: 'var(--text-dim)' }}>No invoices yet.</p>
+          <p style={{ color: 'var(--text-dim)' }}>{tr("No invoices yet.")}</p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--card-border)', textAlign: 'left', color: 'var(--text-dim)' }}>
-                  <th style={{ padding: '8px 6px' }}>Invoice</th>
-                  <th style={{ padding: '8px 6px' }}>Date</th>
-                  <th style={{ padding: '8px 6px' }}>Description</th>
-                  <th style={{ padding: '8px 6px' }}>Status</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>Amount</th>
+                  <th style={{ padding: '8px 6px' }}>{tr("Invoice")}</th>
+                  <th style={{ padding: '8px 6px' }}>{tr("Date")}</th>
+                  <th style={{ padding: '8px 6px' }}>{tr("Description")}</th>
+                  <th style={{ padding: '8px 6px' }}>{tr("Status")}</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Amount")}</th>
                   <th style={{ padding: '8px 6px' }}></th>
                 </tr>
               </thead>
@@ -156,7 +156,7 @@ export default function InvoicesViewOnly({ clientId, invoices }: { clientId: str
                         className="btn btn-secondary"
                         style={{ fontSize: '0.75rem', padding: '5px 10px', marginRight: 6, display: 'inline-block' }}
                       >
-                        Download PDF
+                        {tr("Download PDF")}
                       </a>
                       {inv.status === 'UNPAID' && inv.paymentLink && (
                         <a
@@ -166,7 +166,7 @@ export default function InvoicesViewOnly({ clientId, invoices }: { clientId: str
                           className="btn btn-secondary"
                           style={{ fontSize: '0.75rem', padding: '5px 10px', display: 'inline-block' }}
                         >
-                          Pay online ↗
+                          {tr("Pay online ↗")}
                         </a>
                       )}
                     </td>

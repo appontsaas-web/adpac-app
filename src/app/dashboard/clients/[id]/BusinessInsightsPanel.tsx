@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -42,6 +43,7 @@ export default function BusinessInsightsPanel({
   reviewSummaries: Record<string, { reviewerName: string | null; starRating: number; comment: string | null }>;
   insights: BusinessInsight[];
 }) {
+  const { tr } = useI18n();
   const router = useRouter();
   const [running, setRunning] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -60,7 +62,7 @@ export default function BusinessInsightsPanel({
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(d.error ?? 'Failed to run AI review');
+        setError(d.error ?? tr("Failed to run AI review"));
         return;
       }
       setRunMessage(
@@ -71,7 +73,7 @@ export default function BusinessInsightsPanel({
       if (d.errors?.length) setError(d.errors.join('; '));
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to run AI review — network error');
+      setError(err.message ?? tr("Failed to run AI review — network error"));
     } finally {
       setRunning(false);
     }
@@ -92,12 +94,12 @@ export default function BusinessInsightsPanel({
       const res = await fetch(`/api/business-insights/${id}/approve`, { method: 'POST' });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to approve insight');
+        setError(d.error ?? tr("Failed to approve insight"));
         return;
       }
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to approve insight — network error');
+      setError(err.message ?? tr("Failed to approve insight — network error"));
     } finally {
       setProcessingId(null);
     }
@@ -110,12 +112,12 @@ export default function BusinessInsightsPanel({
       const res = await fetch(`/api/business-insights/${id}/dismiss`, { method: 'POST' });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to dismiss insight');
+        setError(d.error ?? tr("Failed to dismiss insight"));
         return;
       }
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to dismiss insight — network error');
+      setError(err.message ?? tr("Failed to dismiss insight — network error"));
     } finally {
       setProcessingId(null);
     }
@@ -124,21 +126,20 @@ export default function BusinessInsightsPanel({
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 10 }}>
-        <h2 style={{ fontSize: '1.1rem' }}>AI review — branches & reviews</h2>
+        <h2 style={{ fontSize: '1.1rem' }}>{tr("AI review — branches & reviews")}</h2>
         <button className="btn btn-secondary" onClick={handleRun} disabled={running}>
-          {running ? 'Reviewing…' : 'Run AI review'}
+          {running ? tr("Reviewing…") : tr("Run AI review")}
         </button>
       </div>
       <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: 12 }}>
-        Flags branches whose search/maps visibility or customer actions dropped sharply, and drafts replies to
-        unanswered reviews — nothing posts to Google until you approve one below.
+        {tr("Flags branches whose search/maps visibility or customer actions dropped sharply, and drafts replies to unanswered reviews — nothing posts to Google until you approve one below.")}
       </p>
 
       {runMessage && <p style={{ color: 'var(--accent2)', fontSize: '0.82rem', marginBottom: 10 }}>{runMessage}</p>}
       {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: 10 }}>{error}</p>}
 
       {insights.length === 0 ? (
-        <p style={{ color: 'var(--text-dim)' }}>No insights yet. Click "Run AI review" to check.</p>
+        <p style={{ color: 'var(--text-dim)' }}>{tr("No insights yet. Click \"Run AI review\" to check.")}</p>
       ) : (
         insights.map((ins) => {
           const payload = JSON.parse(ins.payloadJson);
@@ -153,7 +154,7 @@ export default function BusinessInsightsPanel({
                   {ins.locationId && <strong>{locationNames[ins.locationId] ?? ins.locationId}</strong>}
                   {review && (
                     <strong>
-                      {review.reviewerName ?? 'Anonymous'} ({review.starRating}★)
+                      {review.reviewerName ?? tr("Anonymous")} ({review.starRating}★)
                     </strong>
                   )}
                 </div>
@@ -165,7 +166,7 @@ export default function BusinessInsightsPanel({
                       onClick={() => handleApprove(ins.id, isReply)}
                       disabled={processingId === ins.id}
                     >
-                      {processingId === ins.id ? 'Working…' : isReply ? 'Post reply' : 'Acknowledge'}
+                      {processingId === ins.id ? tr("Working…") : isReply ? tr("Post reply") : tr("Acknowledge")}
                     </button>
                     <button
                       className="btn btn-secondary"
@@ -173,7 +174,7 @@ export default function BusinessInsightsPanel({
                       onClick={() => handleDismiss(ins.id)}
                       disabled={processingId === ins.id}
                     >
-                      Dismiss
+                      {tr("Dismiss")}
                     </button>
                   </div>
                 )}
@@ -182,12 +183,12 @@ export default function BusinessInsightsPanel({
               <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: 8 }}>{payload.rationale}</p>
               {review?.comment && (
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', background: 'var(--bg-alt)', borderRadius: 6, padding: '6px 8px', marginBottom: 6 }}>
-                  <strong style={{ color: 'var(--text)' }}>Original review:</strong> {review.comment}
+                  <strong style={{ color: 'var(--text)' }}>{tr("Original review:")}</strong> {review.comment}
                 </p>
               )}
               {isReply && payload.proposedReplyText && (
                 <p style={{ fontSize: '0.85rem', background: 'var(--bg-alt)', border: '1px solid var(--card-border)', borderRadius: 8, padding: '10px 12px' }}>
-                  <strong>Proposed reply:</strong> {payload.proposedReplyText}
+                  <strong>{tr("Proposed reply:")}</strong> {payload.proposedReplyText}
                 </p>
               )}
               {ins.errorMessage && <p style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: 4 }}>{ins.errorMessage}</p>}

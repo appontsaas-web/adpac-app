@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -60,6 +61,7 @@ export default function CreativeTestsPanel({
   googleCampaigns: CampaignOption[];
   metaCampaigns: CampaignOption[];
 }) {
+  const { tr } = useI18n();
   const router = useRouter();
   const [tests, setTests] = useState<TestRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,12 +85,12 @@ export default function CreativeTestsPanel({
       const res = await fetch(`/api/creative-tests?clientId=${clientId}`);
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(d.error ?? 'Failed to load creative tests');
+        setError(d.error ?? tr("Failed to load creative tests"));
         return;
       }
       setTests(d.tests ?? []);
     } catch (err: any) {
-      setError(err.message ?? 'Failed to load creative tests — network error');
+      setError(err.message ?? tr("Failed to load creative tests — network error"));
     } finally {
       setLoading(false);
     }
@@ -130,12 +132,12 @@ export default function CreativeTestsPanel({
 
   async function handleCreate() {
     if (!campaignId || !name || selectedAdIds.length < 2) {
-      setError('Pick a campaign, a name, and at least 2 ads in the same ad group/ad set');
+      setError(tr("Pick a campaign, a name, and at least 2 ads in the same ad group/ad set"));
       return;
     }
     const groupId = ads.find((a) => a.adId === selectedAdIds[0])?.adGroupId ?? ads.find((a) => a.adId === selectedAdIds[0])?.adSetId;
     if (!groupId) {
-      setError("Couldn't determine the ad group/ad set for the selected ads");
+      setError(tr("Couldn't determine the ad group/ad set for the selected ads"));
       return;
     }
     setCreating(true);
@@ -160,7 +162,7 @@ export default function CreativeTestsPanel({
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(d.error ?? 'Failed to create test');
+        setError(d.error ?? tr("Failed to create test"));
         return;
       }
       setShowForm(false);
@@ -170,7 +172,7 @@ export default function CreativeTestsPanel({
       loadTests();
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to create test — network error');
+      setError(err.message ?? tr("Failed to create test — network error"));
     } finally {
       setCreating(false);
     }
@@ -184,13 +186,13 @@ export default function CreativeTestsPanel({
       const res = await fetch(`/api/creative-tests/winners/${actionLogId}/approve`, { method: 'POST' });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(d.error ?? 'Failed to approve winner');
+        setError(d.error ?? tr("Failed to approve winner"));
         return;
       }
       loadTests();
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to approve winner — network error');
+      setError(err.message ?? tr("Failed to approve winner — network error"));
     } finally {
       setProcessingId(null);
     }
@@ -203,13 +205,13 @@ export default function CreativeTestsPanel({
       const res = await fetch(`/api/creative-tests/winners/${actionLogId}/dismiss`, { method: 'POST' });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(d.error ?? 'Failed to dismiss');
+        setError(d.error ?? tr("Failed to dismiss"));
         return;
       }
       loadTests();
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to dismiss — network error');
+      setError(err.message ?? tr("Failed to dismiss — network error"));
     } finally {
       setProcessingId(null);
     }
@@ -220,14 +222,13 @@ export default function CreativeTestsPanel({
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 10 }}>
-        <h2 style={{ fontSize: '1.1rem' }}>Creative A/B tests</h2>
+        <h2 style={{ fontSize: '1.1rem' }}>{tr("Creative A/B tests")}</h2>
         <button className="btn btn-secondary" onClick={() => setShowForm((s) => !s)}>
-          {showForm ? 'Cancel' : '+ New test'}
+          {showForm ? tr("Cancel") : tr("+ New test")}
         </button>
       </div>
       <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: 12 }}>
-        Compare 2+ existing ads in the same ad group/ad set. Once one is a statistically significant winner, you'll
-        get a recommendation here to pause the loser — nothing is paused automatically.
+        {tr("Compare 2+ existing ads in the same ad group/ad set. Once one is a statistically significant winner, you'll get a recommendation here to pause the loser — nothing is paused automatically.")}
       </p>
 
       {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: 10 }}>{error}</p>}
@@ -246,7 +247,7 @@ export default function CreativeTestsPanel({
                   }}
                   style={{ width: 'auto' }}
                 />
-                Google Ads
+                {tr("Google Ads")}
               </label>
             )}
             {metaCampaigns.length > 0 && (
@@ -260,21 +261,21 @@ export default function CreativeTestsPanel({
                   }}
                   style={{ width: 'auto' }}
                 />
-                Meta
+                {tr("Meta")}
               </label>
             )}
           </div>
 
           <input
             type="text"
-            placeholder="Test name (e.g. Headline test — Sept)"
+            placeholder={tr("Test name (e.g. Headline test — Sept)")}
             value={name}
             onChange={(e) => setName(e.target.value)}
             style={{ marginBottom: 10 }}
           />
 
           <select value={campaignId} onChange={(e) => setCampaignId(e.target.value)} style={{ marginBottom: 10 }}>
-            <option value="">Select a campaign…</option>
+            <option value="">{tr("Select a campaign…")}</option>
             {campaignOptions.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -282,14 +283,14 @@ export default function CreativeTestsPanel({
             ))}
           </select>
 
-          {loadingAds && <p style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>Loading ads…</p>}
+          {loadingAds && <p style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>{tr("Loading ads…")}</p>}
           {!loadingAds && campaignId && pickableAds.length === 0 && (
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>No synced ads found for this campaign yet.</p>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>{tr("No synced ads found for this campaign yet.")}</p>
           )}
           {!loadingAds && pickableAds.length > 0 && (
             <div style={{ marginBottom: 10 }}>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: 6 }}>
-                Pick 2+ ads from the same ad group/ad set:
+                {tr("Pick 2+ ads from the same ad group/ad set:")}
               </p>
               {pickableAds.map((ad) => (
                 <label key={ad.adId} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', padding: '4px 0' }}>
@@ -307,15 +308,15 @@ export default function CreativeTestsPanel({
           )}
 
           <button className="btn" onClick={handleCreate} disabled={creating || selectedAdIds.length < 2}>
-            {creating ? 'Starting…' : 'Start test'}
+            {creating ? tr("Starting…") : tr("Start test")}
           </button>
         </div>
       )}
 
       {loading ? (
-        <p style={{ color: 'var(--text-dim)' }}>Loading…</p>
+        <p style={{ color: 'var(--text-dim)' }}>{tr("Loading…")}</p>
       ) : tests.length === 0 ? (
-        <p style={{ color: 'var(--text-dim)' }}>No creative tests yet.</p>
+        <p style={{ color: 'var(--text-dim)' }}>{tr("No creative tests yet.")}</p>
       ) : (
         tests.map((test) => {
           const pendingWinner = test.actionLogs[0];
@@ -328,19 +329,19 @@ export default function CreativeTestsPanel({
                     {test.status}
                   </span>{' '}
                   <strong>{test.name}</strong>{' '}
-                  <span style={{ color: 'var(--text-dim)' }}>({test.platform === 'GOOGLE_ADS' ? 'Google Ads' : 'Meta'})</span>
+                  <span style={{ color: 'var(--text-dim)' }}>({test.platform === 'GOOGLE_ADS' ? tr("Google Ads") : tr("Meta")})</span>
                 </div>
               </div>
 
               <table style={{ width: '100%', fontSize: '0.82rem', marginTop: 8, marginBottom: 6 }}>
                 <thead>
                   <tr style={{ color: 'var(--text-dim)', textAlign: 'left' }}>
-                    <th>Variant</th>
-                    <th>Impr.</th>
-                    <th>Clicks</th>
-                    <th>CTR</th>
-                    <th>Conversions</th>
-                    <th>Conv. rate</th>
+                    <th>{tr("Variant")}</th>
+                    <th>{tr("Impr.")}</th>
+                    <th>{tr("Clicks")}</th>
+                    <th>{tr("CTR")}</th>
+                    <th>{tr("Conversions")}</th>
+                    <th>{tr("Conv. rate")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -379,7 +380,7 @@ export default function CreativeTestsPanel({
                       onClick={() => handleApproveWinner(pendingWinner.id)}
                       disabled={processingId === pendingWinner.id}
                     >
-                      {processingId === pendingWinner.id ? 'Working…' : 'Approve — pause loser'}
+                      {processingId === pendingWinner.id ? tr("Working…") : tr("Approve — pause loser")}
                     </button>
                     <button
                       className="btn btn-secondary"
@@ -387,7 +388,7 @@ export default function CreativeTestsPanel({
                       onClick={() => handleDismissWinner(pendingWinner.id)}
                       disabled={processingId === pendingWinner.id}
                     >
-                      Dismiss
+                      {tr("Dismiss")}
                     </button>
                   </div>
                 </div>

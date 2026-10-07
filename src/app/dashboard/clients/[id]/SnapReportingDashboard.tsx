@@ -88,7 +88,7 @@ export default function SnapReportingDashboard({
   snapAdAccountId: string;
   isAdmin?: boolean;
 }) {
-  const { money, t, num } = useI18n();
+  const { tr, money, t, num } = useI18n();
   const [days, setDays] = useState(30);
   const [customRange, setCustomRange] = useState<{ since: string; until: string } | null>(null);
   const [sinceInput, setSinceInput] = useState(() => {
@@ -202,7 +202,7 @@ export default function SnapReportingDashboard({
         }
       }
     } catch (err: any) {
-      setError(err.message ?? 'Failed to load metrics — network error');
+      setError(err.message ?? tr("Failed to load metrics — network error"));
     } finally {
       setLoading(false);
     }
@@ -224,12 +224,12 @@ export default function SnapReportingDashboard({
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to update');
+        setError(d.error ?? tr("Failed to update"));
         return;
       }
       await load();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to update — network error');
+      setError(err.message ?? tr("Failed to update — network error"));
     } finally {
       setTogglingHiddenId(null);
     }
@@ -271,7 +271,7 @@ export default function SnapReportingDashboard({
       }
       await load();
     } catch (err: any) {
-      setError(err.message ?? 'Sync failed — network error');
+      setError(err.message ?? tr("Sync failed — network error"));
     } finally {
       setSyncing(false);
     }
@@ -290,7 +290,7 @@ export default function SnapReportingDashboard({
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
-        <h2 style={{ fontSize: '1.1rem' }}>Performance</h2>
+        <h2 style={{ fontSize: '1.1rem' }}>{tr("Performance")}</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', border: '1px solid var(--card-border)', borderRadius: 8, overflow: 'hidden' }}>
             {RANGES.map((r) => (
@@ -312,28 +312,28 @@ export default function SnapReportingDashboard({
             ))}
           </div>
           <button className="btn btn-secondary" onClick={handleSync} disabled={syncing}>
-            {syncing ? 'Syncing…' : 'Sync now'}
+            {syncing ? tr("Syncing…") : tr("Sync now")}
           </button>
           <button
             className="btn btn-secondary"
             onClick={handleBackfill}
             disabled={syncing}
-            title="Pull a full year of history from Snapchat, not just the currently viewed period"
+            title={tr("Pull a full year of history from Snapchat, not just the currently viewed period")}
           >
-            {syncing ? 'Syncing…' : 'Backfill 12 months'}
+            {syncing ? tr("Syncing…") : tr("Backfill 12 months")}
           </button>
         </div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Custom range:</span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{tr("Custom range:")}</span>
         <input
           type="date"
           value={sinceInput}
           onChange={(e) => setSinceInput(e.target.value)}
           style={{ margin: 0, width: 'auto', padding: '6px 10px', fontSize: '0.8rem' }}
         />
-        <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>to</span>
+        <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>{tr("to")}</span>
         <input
           type="date"
           value={untilInput}
@@ -341,18 +341,18 @@ export default function SnapReportingDashboard({
           style={{ margin: 0, width: 'auto', padding: '6px 10px', fontSize: '0.8rem' }}
         />
         <button className="btn btn-secondary" onClick={applyCustomRange} style={{ padding: '6px 14px', fontSize: '0.8rem' }}>
-          Apply
+          {tr("Apply")}
         </button>
         {customRange && (
           <span style={{ fontSize: '0.78rem', color: 'var(--accent2)' }}>
-            Showing {customRange.since} → {customRange.until}
+            {tr("Showing")}{' '}{customRange.since} → {customRange.until}
           </span>
         )}
       </div>
       {dateError && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginBottom: 10 }}>{dateError}</p>}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Compare to:</span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{tr("Compare to:")}</span>
         <div style={{ display: 'flex', border: '1px solid var(--card-border)', borderRadius: 8, overflow: 'hidden' }}>
           {COMPARE_OPTIONS.map((opt) => (
             <button
@@ -380,7 +380,7 @@ export default function SnapReportingDashboard({
               onChange={(e) => setCompareSinceInput(e.target.value)}
               style={{ margin: 0, width: 'auto', padding: '6px 10px', fontSize: '0.8rem' }}
             />
-            <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>to</span>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>{tr("to")}</span>
             <input
               type="date"
               value={compareUntilInput}
@@ -389,18 +389,18 @@ export default function SnapReportingDashboard({
             />
           </>
         )}
-        {compareRangeLabel && <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>vs {compareRangeLabel}</span>}
+        {compareRangeLabel && <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{tr("vs")}{' '}{compareRangeLabel}</span>}
       </div>
       {compareError && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginBottom: 10 }}>{compareError}</p>}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Filter:</span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{tr("Filter:")}</span>
         <select
           value={campaignFilter}
           onChange={(e) => setCampaignFilter(e.target.value)}
           style={{ margin: 0, width: 'auto', padding: '6px 10px', fontSize: '0.8rem' }}
         >
-          <option value="">All campaigns</option>
+          <option value="">{tr("All campaigns")}</option>
           {campaignOptions.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -409,7 +409,7 @@ export default function SnapReportingDashboard({
         </select>
         {campaignFilter && (
           <button className="btn btn-secondary" style={{ fontSize: '0.78rem', padding: '5px 10px' }} onClick={() => setCampaignFilter('')}>
-            Clear filter
+            {tr("Clear filter")}
           </button>
         )}
       </div>
@@ -417,12 +417,11 @@ export default function SnapReportingDashboard({
       {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: 10 }}>{error}</p>}
       {syncMessage && <p style={{ color: 'var(--accent2)', fontSize: '0.82rem', marginBottom: 10 }}>{syncMessage}</p>}
 
-      {loading && !data && <p style={{ color: 'var(--text-dim)' }}>Loading…</p>}
+      {loading && !data && <p style={{ color: 'var(--text-dim)' }}>{tr("Loading…")}</p>}
 
       {data && data.daily.length === 0 && (
         <p style={{ color: 'var(--text-dim)' }}>
-          No performance data yet for this period. Click "Sync now" once a campaign has been live for at least a
-          day, or wait for the next scheduled sync.
+          {tr("No performance data yet for this period. Click \"Sync now\" once a campaign has been live for at least a day, or wait for the next scheduled sync.")}
         </p>
       )}
 
@@ -465,19 +464,19 @@ export default function SnapReportingDashboard({
                   onClick={() => setShowHiddenCampaigns(!showHiddenCampaigns)}
                   style={{ fontSize: '0.78rem', marginBottom: 10 }}
                 >
-                  {showHiddenCampaigns ? 'Hide' : 'Show'} hidden campaigns ({data.hiddenCount})
+                  {showHiddenCampaigns ? tr("Hide") : tr("Show")} {tr("hidden campaigns (")}{data.hiddenCount})
                 </button>
               )}
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--card-border)', textAlign: 'left', color: 'var(--text-dim)' }}>
-                    <th style={{ padding: '8px 6px' }}>Campaign</th>
-                    <th style={{ padding: '8px 6px' }}>Objective</th>
-                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>Daily budget</th>
-                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>Spend</th>
-                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>Clicks</th>
-                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>Impr.</th>
-                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>Conversions</th>
+                    <th style={{ padding: '8px 6px' }}>{tr("Campaign")}</th>
+                    <th style={{ padding: '8px 6px' }}>{tr("Objective")}</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Daily budget")}</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Spend")}</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Clicks")}</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Impr.")}</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Conversions")}</th>
                     {isAdmin && <th style={{ padding: '8px 6px' }}></th>}
                   </tr>
                 </thead>
@@ -499,7 +498,7 @@ export default function SnapReportingDashboard({
                             onClick={() => handleToggleHidden(c.campaignId, c.hiddenFromList)}
                             disabled={togglingHiddenId === c.campaignId}
                           >
-                            {togglingHiddenId === c.campaignId ? 'Working…' : c.hiddenFromList ? 'Unhide' : 'Hide'}
+                            {togglingHiddenId === c.campaignId ? tr("Working…") : c.hiddenFromList ? tr("Unhide") : tr("Hide")}
                           </button>
                         </td>
                       )}
@@ -516,13 +515,14 @@ export default function SnapReportingDashboard({
 }
 
 function KpiCard({ label, value, delta }: { label: string; value: string; delta?: number | null }) {
+  const { tr } = useI18n();
   return (
     <div style={{ background: 'var(--bg-alt)', border: '1px solid var(--card-border)', borderRadius: 10, padding: '10px 12px' }}>
       <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: '1.05rem', fontWeight: 700 }}>{value}</div>
       {delta !== undefined && delta !== null && (
         <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: 2 }}>
-          {delta > 0 ? '▲' : delta < 0 ? '▼' : '–'} {Math.abs(delta).toFixed(1)}% vs. previous
+          {delta > 0 ? '▲' : delta < 0 ? '▼' : '–'} {Math.abs(delta).toFixed(1)}{tr("% vs. previous")}
         </div>
       )}
     </div>

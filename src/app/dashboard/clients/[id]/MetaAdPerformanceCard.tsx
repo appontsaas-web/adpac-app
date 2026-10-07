@@ -61,7 +61,7 @@ export default function MetaAdPerformanceCard({
   metaAdAccountId: string;
   campaignId?: string | null;
 }) {
-  const { money, num } = useI18n();
+  const { tr, money, num } = useI18n();
   const [tab, setTab] = useState<Tab>('Ad sets');
   const [days, setDays] = useState(30);
   const [customRange, setCustomRange] = useState<{ since: string; until: string } | null>(null);
@@ -83,14 +83,14 @@ export default function MetaAdPerformanceCard({
       const res = await fetch(`/api/meta-metrics/ad-performance?metaAdAccountId=${metaAdAccountId}&${rangeQuery}${campaignQuery}`);
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d?.error ?? 'Failed to load ad set/ad performance data');
+        setError(d?.error ?? tr("Failed to load ad set/ad performance data"));
         return;
       }
       const data = await res.json();
       setAdSets(data.adSets);
       setAds(data.ads);
     } catch (err: any) {
-      setError(err.message ?? 'Failed to load ad set/ad performance data — network error');
+      setError(err.message ?? tr("Failed to load ad set/ad performance data — network error"));
     } finally {
       setLoading(false);
     }
@@ -121,7 +121,7 @@ export default function MetaAdPerformanceCard({
   return (
     <div className="card" style={{ marginTop: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
-        <h2 style={{ fontSize: '1.1rem' }}>Ad set &amp; ad performance</h2>
+        <h2 style={{ fontSize: '1.1rem' }}>{tr("Ad set & ad performance")}</h2>
         <div style={{ display: 'flex', border: '1px solid var(--card-border)', borderRadius: 8, overflow: 'hidden' }}>
           {RANGES.map((r) => (
             <button
@@ -144,14 +144,14 @@ export default function MetaAdPerformanceCard({
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Custom range:</span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{tr("Custom range:")}</span>
         <input
           type="date"
           value={sinceInput}
           onChange={(e) => setSinceInput(e.target.value)}
           style={{ margin: 0, width: 'auto', padding: '6px 10px', fontSize: '0.8rem' }}
         />
-        <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>to</span>
+        <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>{tr("to")}</span>
         <input
           type="date"
           value={untilInput}
@@ -159,11 +159,11 @@ export default function MetaAdPerformanceCard({
           style={{ margin: 0, width: 'auto', padding: '6px 10px', fontSize: '0.8rem' }}
         />
         <button className="btn btn-secondary" onClick={applyCustomRange} style={{ padding: '6px 14px', fontSize: '0.8rem' }}>
-          Apply
+          {tr("Apply")}
         </button>
         {customRange && (
           <span style={{ fontSize: '0.78rem', color: 'var(--accent2)' }}>
-            Showing {customRange.since} → {customRange.until}
+            {tr("Showing")}{' '}{customRange.since} → {customRange.until}
           </span>
         )}
         {dateError && <span style={{ fontSize: '0.78rem', color: '#ef4444' }}>{dateError}</span>}
@@ -183,24 +183,24 @@ export default function MetaAdPerformanceCard({
       </div>
 
       {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: 10 }}>{error}</p>}
-      {loading && !adSets && <p style={{ color: 'var(--text-dim)' }}>Loading…</p>}
+      {loading && !adSets && <p style={{ color: 'var(--text-dim)' }}>{tr("Loading…")}</p>}
 
       {tab === 'Ad sets' && adSets && (
         adSets.length === 0 ? (
-          <p style={{ color: 'var(--text-dim)' }}>No ad-set data yet for this period. Click "Sync now" above once campaigns have been live for a day.</p>
+          <p style={{ color: 'var(--text-dim)' }}>{tr("No ad-set data yet for this period. Click \"Sync now\" above once campaigns have been live for a day.")}</p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--card-border)', textAlign: 'left', color: 'var(--text-dim)' }}>
-                  <th style={{ padding: '8px 6px' }}>Ad set</th>
-                  <th style={{ padding: '8px 6px' }}>Status</th>
-                  <th style={{ padding: '8px 6px' }}>Targeting</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>Daily budget</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>Spend</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>Clicks</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>Impr.</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>Conversions</th>
+                  <th style={{ padding: '8px 6px' }}>{tr("Ad set")}</th>
+                  <th style={{ padding: '8px 6px' }}>{tr("Status")}</th>
+                  <th style={{ padding: '8px 6px' }}>{tr("Targeting")}</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Daily budget")}</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Spend")}</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Clicks")}</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Impr.")}</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Conversions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -224,17 +224,17 @@ export default function MetaAdPerformanceCard({
 
       {tab === 'Ads' && ads && (
         ads.length === 0 ? (
-          <p style={{ color: 'var(--text-dim)' }}>No ad-level data yet for this period.</p>
+          <p style={{ color: 'var(--text-dim)' }}>{tr("No ad-level data yet for this period.")}</p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--card-border)', textAlign: 'left', color: 'var(--text-dim)' }}>
-                  <th style={{ padding: '8px 6px' }}>Ad (creative)</th>
-                  <th style={{ padding: '8px 6px' }}>Status</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>Spend</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>Clicks</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>Conversions</th>
+                  <th style={{ padding: '8px 6px' }}>{tr("Ad (creative)")}</th>
+                  <th style={{ padding: '8px 6px' }}>{tr("Status")}</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Spend")}</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Clicks")}</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Conversions")}</th>
                 </tr>
               </thead>
               <tbody>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 import { useState, useEffect, useCallback } from 'react';
 
 interface Goal {
@@ -30,6 +31,7 @@ function currentMonthLabel(): string {
 // generic pacing/anomaly signals. See ClientMonthlyGoal's schema comment for
 // why this is monthly and overwritten rather than versioned.
 export default function MonthlyGoalCard({ clientId }: { clientId: string }) {
+  const { tr } = useI18n();
   const [goal, setGoal] = useState<Goal | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -68,7 +70,7 @@ export default function MonthlyGoalCard({ clientId }: { clientId: string }) {
 
   async function handleSave() {
     if (!metricType && !note.trim()) {
-      setError('Set either a metric target or a note.');
+      setError(tr("Set either a metric target or a note."));
       return;
     }
     setSaving(true);
@@ -85,13 +87,13 @@ export default function MonthlyGoalCard({ clientId }: { clientId: string }) {
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to save goal');
+        setError(d.error ?? tr("Failed to save goal"));
         return;
       }
       setEditing(false);
       await load();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to save goal — network error');
+      setError(err.message ?? tr("Failed to save goal — network error"));
     } finally {
       setSaving(false);
     }
@@ -102,19 +104,19 @@ export default function MonthlyGoalCard({ clientId }: { clientId: string }) {
   return (
     <div className="card" style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: editing ? 12 : 4 }}>
-        <h2 style={{ fontSize: '1.05rem' }}>Goal for {currentMonthLabel()}</h2>
+        <h2 style={{ fontSize: '1.05rem' }}>{tr("Goal for")}{' '}{currentMonthLabel()}</h2>
         {!editing && (
           <button className="btn btn-secondary" style={{ fontSize: '0.78rem', padding: '5px 10px' }} onClick={openEdit}>
-            {goal ? 'Edit goal' : 'Set goal'}
+            {goal ? tr("Edit goal") : tr("Set goal")}
           </button>
         )}
       </div>
 
       {loading ? (
-        <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Loading…</p>
+        <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>{tr("Loading…")}</p>
       ) : editing ? (
         <div>
-          <label style={{ fontSize: '0.8rem' }}>Metric target</label>
+          <label style={{ fontSize: '0.8rem' }}>{tr("Metric target")}</label>
           <select value={metricType} onChange={(e) => setMetricType(e.target.value)} style={{ marginBottom: 8 }}>
             {METRIC_OPTIONS.map((m) => (
               <option key={m.value} value={m.value}>
@@ -126,38 +128,37 @@ export default function MonthlyGoalCard({ clientId }: { clientId: string }) {
             <input
               type="number"
               step="any"
-              placeholder="Target value"
+              placeholder={tr("Target value")}
               value={targetValue}
               onChange={(e) => setTargetValue(e.target.value)}
               style={{ marginBottom: 8 }}
             />
           )}
-          <label style={{ fontSize: '0.8rem' }}>Note (optional context, e.g. "Focus on lead volume this month")</label>
+          <label style={{ fontSize: '0.8rem' }}>{tr("Note (optional context, e.g. \"Focus on lead volume this month\")")}</label>
           <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} style={{ marginBottom: 8 }} />
           {error && <p style={{ color: '#ef4444', fontSize: '0.78rem', marginBottom: 8 }}>{error}</p>}
           <button className="btn" style={{ fontSize: '0.8rem', padding: '6px 14px', marginRight: 6 }} onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving…' : 'Save goal'}
+            {saving ? tr("Saving…") : tr("Save goal")}
           </button>
           <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '6px 14px' }} onClick={() => setEditing(false)} disabled={saving}>
-            Cancel
+            {tr("Cancel")}
           </button>
         </div>
       ) : goal ? (
         <div>
           {metricLabel && goal.targetValue !== null && (
             <p style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: 4 }}>
-              Target: {metricLabel} — {goal.targetValue.toLocaleString()}
+              {tr("Target:")}{' '}{metricLabel} — {goal.targetValue.toLocaleString()}
             </p>
           )}
           {goal.note && <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: 4 }}>{goal.note}</p>}
           <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
-            Set by {goal.setByUser?.name ?? goal.setByUser?.email ?? 'a team member'} · used to steer this month's AI
-            optimization recommendations
+            {tr("Set by")}{' '}{goal.setByUser?.name ?? goal.setByUser?.email ?? tr("a team member")} {tr("· used to steer this month's AI optimization recommendations")}
           </p>
         </div>
       ) : (
         <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>
-          No goal set for this month yet. Setting one helps the AI optimization engine target the same thing you are.
+          {tr("No goal set for this month yet. Setting one helps the AI optimization engine target the same thing you are.")}
         </p>
       )}
     </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -26,6 +27,7 @@ export default function AccessManager({
   staff: StaffUser[];
   assignments: Assignment[];
 }) {
+  const { tr } = useI18n();
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export default function AccessManager({
         });
         if (!res.ok) {
           const d = await res.json().catch(() => ({}));
-          setError(d.error ?? 'Failed to update access');
+          setError(d.error ?? tr("Failed to update access"));
           return;
         }
       } else {
@@ -55,13 +57,13 @@ export default function AccessManager({
         });
         if (!res.ok) {
           const d = await res.json().catch(() => ({}));
-          setError(d.error ?? 'Failed to update access');
+          setError(d.error ?? tr("Failed to update access"));
           return;
         }
       }
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to update access — network error');
+      setError(err.message ?? tr("Failed to update access — network error"));
     } finally {
       setBusyId(null);
     }
@@ -70,13 +72,13 @@ export default function AccessManager({
   if (staff.length === 0) {
     return (
       <div className="card">
-        <h2 style={{ fontSize: '1.1rem', marginBottom: 8 }}>Access</h2>
+        <h2 style={{ fontSize: '1.1rem', marginBottom: 8 }}>{tr("Access")}</h2>
         <p style={{ color: 'var(--text-dim)' }}>
-          No staff accounts yet. Add team members from the{' '}
+          {tr("No staff accounts yet. Add team members from the")}{' '}
           <a href="/dashboard/team" style={{ color: 'var(--accent2)' }}>
-            Team
+            {tr("Team")}
           </a>{' '}
-          page, then grant them access here.
+          {tr("page, then grant them access here.")}
         </p>
       </div>
     );
@@ -84,10 +86,9 @@ export default function AccessManager({
 
   return (
     <div className="card">
-      <h2 style={{ fontSize: '1.1rem', marginBottom: 4 }}>Access</h2>
+      <h2 style={{ fontSize: '1.1rem', marginBottom: 4 }}>{tr("Access")}</h2>
       <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: 12 }}>
-        This is just whether they can see this client at all, and at View or Edit level. What they can actually
-        do (campaigns, Google Ads, targeting, invoices) depends on their Position, set on the Team page.
+        {tr("This is just whether they can see this client at all, and at View or Edit level. What they can actually do (campaigns, Google Ads, targeting, invoices) depends on their Position, set on the Team page.")}
       </p>
       {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: 10 }}>{error}</p>}
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
@@ -107,9 +108,9 @@ export default function AccessManager({
                     disabled={busyId === u.id}
                     style={{ margin: 0, width: 'auto' }}
                   >
-                    <option value="NONE">No access</option>
-                    <option value="VIEW">View</option>
-                    <option value="EDIT">Edit</option>
+                    <option value="NONE">{tr("No access")}</option>
+                    <option value="VIEW">{tr("View")}</option>
+                    <option value="EDIT">{tr("Edit")}</option>
                   </select>
                 </td>
               </tr>

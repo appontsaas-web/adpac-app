@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Metric {
@@ -10,11 +11,12 @@ interface Metric {
 }
 
 export default function MetricsChart({ metrics }: { metrics: Metric[] }) {
+  const { tr } = useI18n();
   if (metrics.length === 0) {
     return (
       <p style={{ color: 'var(--text-dim)' }}>
-        No performance data yet — this fills in once campaigns are live and{' '}
-        <code>/api/metrics/sync</code> has run (wire it to a daily cron — see README).
+        {tr("No performance data yet — this fills in once campaigns are live and")}{' '}
+        <code>/api/metrics/sync</code> {tr("has run (wire it to a daily cron — see README).")}
       </p>
     );
   }

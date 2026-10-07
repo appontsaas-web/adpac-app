@@ -1,9 +1,11 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/LocaleProvider';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function PortalPlanActions({ planId, status }: { planId: string; status: string }) {
+  const { tr } = useI18n();
   const router = useRouter();
   const [working, setWorking] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -11,10 +13,10 @@ export default function PortalPlanActions({ planId, status }: { planId: string; 
   const [error, setError] = useState<string | null>(null);
 
   if (status === 'CLIENT_APPROVED') {
-    return <p style={{ color: 'var(--accent2, #22d3c9)', fontSize: '0.9rem' }}>✓ You approved this plan.</p>;
+    return <p style={{ color: 'var(--accent2, #22d3c9)', fontSize: '0.9rem' }}>{tr("✓ You approved this plan.")}</p>;
   }
   if (status === 'CLIENT_REJECTED') {
-    return <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>You requested changes to this plan — our team will follow up.</p>;
+    return <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>{tr("You requested changes to this plan — our team will follow up.")}</p>;
   }
   if (status !== 'PENDING_CLIENT_APPROVAL') {
     return null;
@@ -28,13 +30,13 @@ export default function PortalPlanActions({ planId, status }: { planId: string; 
       const res = await fetch(`/api/portal/plans/${planId}/approve`, { method: 'POST' });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(d.error ?? 'Failed to approve');
+        setError(d.error ?? tr("Failed to approve"));
         return;
       }
       router.push('/portal');
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Network error');
+      setError(err.message ?? tr("Network error"));
     } finally {
       setWorking(false);
     }
@@ -42,7 +44,7 @@ export default function PortalPlanActions({ planId, status }: { planId: string; 
 
   async function handleRequestChanges() {
     if (!feedback.trim()) {
-      setError('Please describe what you’d like changed');
+      setError(tr("Please describe what you’d like changed"));
       return;
     }
     setWorking(true);
@@ -55,13 +57,13 @@ export default function PortalPlanActions({ planId, status }: { planId: string; 
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(d.error ?? 'Failed to submit feedback');
+        setError(d.error ?? tr("Failed to submit feedback"));
         return;
       }
       router.push('/portal');
       router.refresh();
     } catch (err: any) {
-      setError(err.message ?? 'Network error');
+      setError(err.message ?? tr("Network error"));
     } finally {
       setWorking(false);
     }
@@ -73,22 +75,22 @@ export default function PortalPlanActions({ planId, status }: { planId: string; 
       {!showFeedback ? (
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn" onClick={handleApprove} disabled={working}>
-            {working ? 'Working…' : 'Approve plan'}
+            {working ? tr("Working…") : tr("Approve plan")}
           </button>
           <button className="btn btn-secondary" onClick={() => setShowFeedback(true)} disabled={working}>
-            Request changes
+            {tr("Request changes")}
           </button>
         </div>
       ) : (
         <div>
-          <label>What would you like changed?</label>
+          <label>{tr("What would you like changed?")}</label>
           <textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} rows={3} />
           <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
             <button className="btn" onClick={handleRequestChanges} disabled={working}>
-              {working ? 'Submitting…' : 'Submit feedback'}
+              {working ? tr("Submitting…") : tr("Submit feedback")}
             </button>
             <button className="btn btn-secondary" onClick={() => setShowFeedback(false)} disabled={working}>
-              Cancel
+              {tr("Cancel")}
             </button>
           </div>
         </div>

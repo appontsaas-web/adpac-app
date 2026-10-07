@@ -106,7 +106,7 @@ export default function MetaReportingDashboard({
   metaAdAccountId: string;
   isAdmin?: boolean;
 }) {
-  const { money, t, num } = useI18n();
+  const { tr, money, t, num } = useI18n();
   const [days, setDays] = useState(30);
   const [customRange, setCustomRange] = useState<{ since: string; until: string } | null>(null);
   const [sinceInput, setSinceInput] = useState(() => {
@@ -244,7 +244,7 @@ export default function MetaReportingDashboard({
         }
       }
     } catch (err: any) {
-      setError(err.message ?? 'Failed to load metrics — network error');
+      setError(err.message ?? tr("Failed to load metrics — network error"));
     } finally {
       setLoading(false);
     }
@@ -266,12 +266,12 @@ export default function MetaReportingDashboard({
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error ?? 'Failed to update');
+        setError(d.error ?? tr("Failed to update"));
         return;
       }
       await load();
     } catch (err: any) {
-      setError(err.message ?? 'Failed to update — network error');
+      setError(err.message ?? tr("Failed to update — network error"));
     } finally {
       setTogglingHiddenId(null);
     }
@@ -313,7 +313,7 @@ export default function MetaReportingDashboard({
       }
       await load();
     } catch (err: any) {
-      setError(err.message ?? 'Sync failed — network error');
+      setError(err.message ?? tr("Sync failed — network error"));
     } finally {
       setSyncing(false);
     }
@@ -360,7 +360,7 @@ export default function MetaReportingDashboard({
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
-        <h2 style={{ fontSize: '1.1rem' }}>Performance</h2>
+        <h2 style={{ fontSize: '1.1rem' }}>{tr("Performance")}</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', border: '1px solid var(--card-border)', borderRadius: 8, overflow: 'hidden' }}>
             {RANGES.map((r) => (
@@ -382,26 +382,26 @@ export default function MetaReportingDashboard({
             ))}
           </div>
           <button className="btn btn-secondary" onClick={handleSync} disabled={syncing}>
-            {syncing ? 'Syncing…' : 'Sync now'}
+            {syncing ? tr("Syncing…") : tr("Sync now")}
           </button>
           <button
             className="btn btn-secondary"
             onClick={handleBackfill}
             disabled={syncing}
-            title="Pull a full year of history from Meta, not just the currently viewed period"
+            title={tr("Pull a full year of history from Meta, not just the currently viewed period")}
           >
-            {syncing ? 'Syncing…' : 'Backfill 12 months'}
+            {syncing ? tr("Syncing…") : tr("Backfill 12 months")}
           </button>
-          <button className="btn btn-secondary" onClick={() => handleExport()} title="Download an AdPac-branded PDF with every section included">
-            Export PDF
+          <button className="btn btn-secondary" onClick={() => handleExport()} title={tr("Download an AdPac-branded PDF with every section included")}>
+            {tr("Export PDF")}
           </button>
           <div style={{ position: 'relative' }}>
             <button
               className="btn btn-secondary"
               onClick={() => setShowReportBuilder((v) => !v)}
-              title="Choose which sections to include before generating"
+              title={tr("Choose which sections to include before generating")}
             >
-              Build report ▾
+              {tr("Build report ▾")}
             </button>
             {showReportBuilder && (
               <div
@@ -418,7 +418,7 @@ export default function MetaReportingDashboard({
                   boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
                 }}
               >
-                <div style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: 8 }}>Include in report</div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: 8 }}>{tr("Include in report")}</div>
                 {(
                   [
                     { key: 'kpis', label: 'KPI summary' },
@@ -447,7 +447,7 @@ export default function MetaReportingDashboard({
                     setShowReportBuilder(false);
                   }}
                 >
-                  Generate PDF
+                  {tr("Generate PDF")}
                 </button>
               </div>
             )}
@@ -456,14 +456,14 @@ export default function MetaReportingDashboard({
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Custom range:</span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{tr("Custom range:")}</span>
         <input
           type="date"
           value={sinceInput}
           onChange={(e) => setSinceInput(e.target.value)}
           style={{ margin: 0, width: 'auto', padding: '6px 10px', fontSize: '0.8rem' }}
         />
-        <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>to</span>
+        <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>{tr("to")}</span>
         <input
           type="date"
           value={untilInput}
@@ -471,18 +471,18 @@ export default function MetaReportingDashboard({
           style={{ margin: 0, width: 'auto', padding: '6px 10px', fontSize: '0.8rem' }}
         />
         <button className="btn btn-secondary" onClick={applyCustomRange} style={{ padding: '6px 14px', fontSize: '0.8rem' }}>
-          Apply
+          {tr("Apply")}
         </button>
         {customRange && (
           <span style={{ fontSize: '0.78rem', color: 'var(--accent2)' }}>
-            Showing {customRange.since} → {customRange.until}
+            {tr("Showing")}{' '}{customRange.since} → {customRange.until}
           </span>
         )}
       </div>
       {dateError && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginBottom: 10 }}>{dateError}</p>}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Compare to:</span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{tr("Compare to:")}</span>
         <div style={{ display: 'flex', border: '1px solid var(--card-border)', borderRadius: 8, overflow: 'hidden' }}>
           {COMPARE_OPTIONS.map((opt) => (
             <button
@@ -510,7 +510,7 @@ export default function MetaReportingDashboard({
               onChange={(e) => setCompareSinceInput(e.target.value)}
               style={{ margin: 0, width: 'auto', padding: '6px 10px', fontSize: '0.8rem' }}
             />
-            <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>to</span>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>{tr("to")}</span>
             <input
               type="date"
               value={compareUntilInput}
@@ -519,18 +519,18 @@ export default function MetaReportingDashboard({
             />
           </>
         )}
-        {compareRangeLabel && <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>vs {compareRangeLabel}</span>}
+        {compareRangeLabel && <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{tr("vs")}{' '}{compareRangeLabel}</span>}
       </div>
       {compareError && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginBottom: 10 }}>{compareError}</p>}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Filter:</span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{tr("Filter:")}</span>
         <select
           value={campaignFilter}
           onChange={(e) => setCampaignFilter(e.target.value)}
           style={{ margin: 0, width: 'auto', padding: '6px 10px', fontSize: '0.8rem' }}
         >
-          <option value="">All campaigns</option>
+          <option value="">{tr("All campaigns")}</option>
           {campaignOptions.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -545,10 +545,10 @@ export default function MetaReportingDashboard({
           }}
           style={{ margin: 0, width: 'auto', padding: '6px 10px', fontSize: '0.8rem' }}
         >
-          <option value="">Any audience</option>
-          <option value="age">Age</option>
-          <option value="gender">Gender</option>
-          <option value="region">Region</option>
+          <option value="">{tr("Any audience")}</option>
+          <option value="age">{tr("Age")}</option>
+          <option value="gender">{tr("Gender")}</option>
+          <option value="region">{tr("Region")}</option>
         </select>
         {audienceDim && (
           <select
@@ -556,7 +556,7 @@ export default function MetaReportingDashboard({
             onChange={(e) => setAudienceVal(e.target.value)}
             style={{ margin: 0, width: 'auto', padding: '6px 10px', fontSize: '0.8rem' }}
           >
-            <option value="">Select a value…</option>
+            <option value="">{tr("Select a value…")}</option>
             {(audienceDim === 'age' ? audience?.age : audienceDim === 'gender' ? audience?.gender : audience?.region)?.map((b) => (
               <option key={b.value} value={b.value}>
                 {prettifyLabel(b.value)}
@@ -574,7 +574,7 @@ export default function MetaReportingDashboard({
               setAudienceVal('');
             }}
           >
-            Clear filters
+            {tr("Clear filters")}
           </button>
         )}
       </div>
@@ -582,12 +582,11 @@ export default function MetaReportingDashboard({
       {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: 10 }}>{error}</p>}
       {syncMessage && <p style={{ color: 'var(--accent2)', fontSize: '0.82rem', marginBottom: 10 }}>{syncMessage}</p>}
 
-      {loading && !data && <p style={{ color: 'var(--text-dim)' }}>Loading…</p>}
+      {loading && !data && <p style={{ color: 'var(--text-dim)' }}>{tr("Loading…")}</p>}
 
       {data && data.daily.length === 0 && (
         <p style={{ color: 'var(--text-dim)' }}>
-          No performance data yet for this period. Click "Sync now" once a campaign has been live for at least a
-          day, or wait for the next scheduled sync.
+          {tr("No performance data yet for this period. Click \"Sync now\" once a campaign has been live for at least a day, or wait for the next scheduled sync.")}
         </p>
       )}
 
@@ -638,19 +637,19 @@ export default function MetaReportingDashboard({
                   onClick={() => setShowHiddenCampaigns(!showHiddenCampaigns)}
                   style={{ fontSize: '0.78rem', marginBottom: 10 }}
                 >
-                  {showHiddenCampaigns ? 'Hide' : 'Show'} hidden campaigns ({data.hiddenCount})
+                  {showHiddenCampaigns ? tr("Hide") : tr("Show")} {tr("hidden campaigns (")}{data.hiddenCount})
                 </button>
               )}
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--card-border)', textAlign: 'left', color: 'var(--text-dim)' }}>
-                    <th style={{ padding: '8px 6px' }}>Campaign</th>
-                    <th style={{ padding: '8px 6px' }}>Objective</th>
-                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>Daily budget</th>
-                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>Spend</th>
-                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>Clicks</th>
-                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>Impr.</th>
-                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>Conversions</th>
+                    <th style={{ padding: '8px 6px' }}>{tr("Campaign")}</th>
+                    <th style={{ padding: '8px 6px' }}>{tr("Objective")}</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Daily budget")}</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Spend")}</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Clicks")}</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Impr.")}</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'right' }}>{tr("Conversions")}</th>
                     {isAdmin && <th style={{ padding: '8px 6px' }}></th>}
                   </tr>
                 </thead>
@@ -672,7 +671,7 @@ export default function MetaReportingDashboard({
                             onClick={() => handleToggleHidden(c.campaignId, c.hiddenFromList)}
                             disabled={togglingHiddenId === c.campaignId}
                           >
-                            {togglingHiddenId === c.campaignId ? 'Working…' : c.hiddenFromList ? 'Unhide' : 'Hide'}
+                            {togglingHiddenId === c.campaignId ? tr("Working…") : c.hiddenFromList ? tr("Unhide") : tr("Hide")}
                           </button>
                         </td>
                       )}
@@ -685,14 +684,14 @@ export default function MetaReportingDashboard({
 
           {audience && (
             <div style={{ marginTop: 24 }}>
-              <h3 style={{ fontSize: '0.95rem', marginBottom: 12 }}>Audience &amp; placement</h3>
+              <h3 style={{ fontSize: '0.95rem', marginBottom: 12 }}>{tr("Audience & placement")}</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-                <AudienceTable title="Age" buckets={audience.age} />
-                <AudienceTable title="Gender" buckets={audience.gender} />
-                <AudienceTable title="Country" buckets={audience.country} />
-                <AudienceTable title="Region" buckets={audience.region} />
-                <AudienceTable title="Placement" buckets={audience.platform} />
-                <AudienceTable title="Hour of day" buckets={audience.hour} sortByCost={false} />
+                <AudienceTable title={tr("Age")} buckets={audience.age} />
+                <AudienceTable title={tr("Gender")} buckets={audience.gender} />
+                <AudienceTable title={tr("Country")} buckets={audience.country} />
+                <AudienceTable title={tr("Region")} buckets={audience.region} />
+                <AudienceTable title={tr("Placement")} buckets={audience.platform} />
+                <AudienceTable title={tr("Hour of day")} buckets={audience.hour} sortByCost={false} />
               </div>
             </div>
           )}
@@ -721,13 +720,13 @@ function AudienceTable({
   buckets: AudienceBucket[];
   sortByCost?: boolean;
 }) {
-  const { money, num } = useI18n();
+  const { tr, money, num } = useI18n();
   const top = sortByCost ? buckets.slice(0, 6) : buckets;
   return (
     <div style={{ background: 'var(--bg-alt)', border: '1px solid var(--card-border)', borderRadius: 10, padding: 12 }}>
       <div style={{ fontSize: '0.82rem', fontWeight: 700, marginBottom: 8 }}>{title}</div>
       {top.length === 0 ? (
-        <p style={{ color: 'var(--text-dim)', fontSize: '0.78rem', margin: 0 }}>No data yet.</p>
+        <p style={{ color: 'var(--text-dim)', fontSize: '0.78rem', margin: 0 }}>{tr("No data yet.")}</p>
       ) : (
         <table style={{ width: '100%', fontSize: '0.78rem', borderCollapse: 'collapse' }}>
           <tbody>
@@ -736,7 +735,7 @@ function AudienceTable({
                 <td style={{ padding: '3px 0', color: 'var(--text-dim)' }}>{prettifyLabel(b.value)}</td>
                 <td style={{ padding: '3px 0', textAlign: 'right' }}>{money(b.costCents)}</td>
                 <td style={{ padding: '3px 0', textAlign: 'right', color: 'var(--text-dim)' }}>
-                  {num(b.conversions)} conv.
+                  {num(b.conversions)} {tr("conv.")}
                 </td>
               </tr>
             ))}
@@ -748,13 +747,14 @@ function AudienceTable({
 }
 
 function KpiCard({ label, value, delta }: { label: string; value: string; delta?: number | null }) {
+  const { tr } = useI18n();
   return (
     <div style={{ background: 'var(--bg-alt)', border: '1px solid var(--card-border)', borderRadius: 10, padding: '10px 12px' }}>
       <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: '1.05rem', fontWeight: 700 }}>{value}</div>
       {delta !== undefined && delta !== null && (
         <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: 2 }}>
-          {delta > 0 ? '▲' : delta < 0 ? '▼' : '–'} {Math.abs(delta).toFixed(1)}% vs. previous
+          {delta > 0 ? '▲' : delta < 0 ? '▼' : '–'} {Math.abs(delta).toFixed(1)}{tr("% vs. previous")}
         </div>
       )}
     </div>
