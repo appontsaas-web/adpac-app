@@ -181,3 +181,56 @@ export async function runFreeAnalysis(clientId: string, locale: 'en' | 'ar' = 'e
     throw err;
   }
 }
+
+/**
+ * Lets a prospect swap the connected account/platform when the first one
+ * turned out empty or wrong. Only allowed before a report has been
+ * generated (never after READY/EXPIRED — one analysis per customer).
+ * Forgets the local link only; nothing is touched on the platform side.
+ */
+export async function resetFreeAnalysisConnection(clientId: string): Promise<{ ok: boolean; reason?: string }> {
+  const analysis = await db.freeAnalysis.findUnique({ where: { clientId } });
+  if (analysis && (analysis.status === 'READY' || analysis.status === 'EXPIRED' || analysis.status === 'GENERATING')) {
+    return { ok: false, reason: 'Your analysis has already been generated.' };
+  }
+
+  // Meta / Snapchat / TikTok: remove campaigns + metrics first (FK order), keeping the ActionLog audit trail.
+  const meta = await db.metaAdAccount.findMany({ where: { clientId }, select: { id: true } });
+  for (const a of meta) {
+    const ids = (await db.metaCampaign.findMany({ where: { adAccountId: a.id }, select: { id: true } })).map((c) => c.id);
+    if (ids.length) {
+      await db.actionLog.updateMany({ where: { metaCampaignId: { in: ids } }, data: { metaCampaignId: null } });
+      await db.metaDailyMetric.deleteMany({ where: { campaignId: { in: ids } } });
+      await db.metaCampaign.deleteMany({ where: { id: { in: ids } } });
+    }
+  }
+  await db.metaAdAccount.deleteMany({ where: { clientId } });
+
+  const snap = await db.snapAdAccount.findMany({ where: { clientId }, select: { id: true } });
+  for (const a of snap) {
+    const ids = (await db.snapCampaign.findMany({ where: { adAccountId: a.id }, select: { id: true } })).map((c) => c.id);
+    if (ids.length) {
+      await db.actionLog.updateMany({ where: { snapCampaignId: { in: ids } }, data: { snapCampaignId: null } });
+      await db.snapDailyMetric.deleteMany({ where: { campaignId: { in: ids } } });
+      await db.snapCampaign.deleteMany({ where: { id: { in: ids } } });
+    }
+  }
+  await db.snapAdAccount.deleteMany({ where: { clientId } });
+
+  const tt = await db.tikTokAdAccount.findMany({ where: { clientId }, select: { id: true } });
+  for (const a of tt) {
+    const ids = (await db.tikTokCampaign.findMany({ where: { adAccountId: a.id }, select: { id: true } })).map((c) => c.id);
+    if (ids.length) {
+      await db.actionLog.updateMany({ where: { tiktokCampaignId: { in: ids } }, data: { tiktokCampaignId: null } });
+      await db.tikTokDailyMetric.deleteMany({ where: { campaignId: { in: ids } } });
+      await db.tikTokCampaign.deleteMany({ where: { id: { in: ids } } });
+    }
+  }
+  await db.tikTokAdAccount.deleteMany({ where: { clientId } });
+
+  // Google Ads: campaigns keep a nullable account link (ON DELETE SET NULL), same as the staff disconnect.
+  await db.googleAdsAccount.deleteMany({ where: { clientId } });
+
+  await db.freeAnalysis.deleteMany({ where: { clientId } });
+  return { ok: true };
+}

@@ -13,6 +13,22 @@ export default function GenerateAnalysis({ failed, lastError }: { failed: boolea
   const [err, setErr] = useState<string | null>(failed ? lastError ?? 'Something went wrong.' : null);
   const [running, setRunning] = useState(!failed);
 
+  const [resetting, setResetting] = useState(false);
+
+  async function switchAccount() {
+    setResetting(true);
+    setErr(null);
+    try {
+      const res = await fetch('/api/portal/analysis/reset', { method: 'POST' });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error ?? 'Could not disconnect');
+      router.refresh();
+    } catch (e: any) {
+      setErr(e.message);
+      setResetting(false);
+    }
+  }
+
   async function run() {
     setRunning(true);
     setErr(null);
@@ -46,7 +62,15 @@ export default function GenerateAnalysis({ failed, lastError }: { failed: boolea
       ) : (
         <>
           <p style={{ color: '#ef4444', marginBottom: 10 }}>{err}</p>
-          <button className="btn" onClick={run}>{tr('Try again')}</button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button className="btn" onClick={run} disabled={resetting}>{tr('Try again')}</button>
+            <button className="btn btn-secondary" onClick={switchAccount} disabled={resetting}>
+              {resetting ? tr('Disconnecting…') : tr('Connect a different account')}
+            </button>
+          </div>
+          <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem', marginTop: 10 }}>
+            {tr('Wrong or empty account? Disconnect it and connect another one, on any platform.')}
+          </p>
         </>
       )}
     </div>
