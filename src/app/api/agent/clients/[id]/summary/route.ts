@@ -34,7 +34,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   });
   const byId = new Map(rows.map((r) => [r.campaignId, r._sum]));
 
-  const campaignOut = campaigns.map((c) => {
+  // Keep the payload focused: campaigns that are live, or had any spend or
+  // impressions in the window. Everything else is listed by name only.
+  const isActive = (c: (typeof campaigns)[number]) => {
+    const t = byId.get(c.id);
+    return c.status === 'LIVE' || (t?.costCents ?? 0) > 0 || (t?.impressions ?? 0) > 0;
+  };
+  const dormant = campaigns.filter((c) => !isActive(c)).map((c) => ({ id: c.id, name: c.name, status: c.status }));
+  const campaignOut = campaigns.filter(isActive).map((c) => {
     const s = byId.get(c.id);
     const clicks = s?.clicks ?? 0, imp = s?.impressions ?? 0, cost = s?.costCents ?? 0, conv = s?.conversions ?? 0;
     return {
@@ -61,7 +68,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   });
 
   return NextResponse.json({
-    client, windowDays: days, campaigns: campaignOut,
+    client, windowDays: days, campaigns: campaignOut, dormantCampaigns: dormant,
     pendingInsights: pending.map((p) => ({ ...p, payload: safeJson(p.payloadJson), payloadJson: undefined })),
     recentDecisions: decisions,
   });
